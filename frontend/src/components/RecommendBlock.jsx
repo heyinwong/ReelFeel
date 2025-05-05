@@ -1,18 +1,19 @@
-function RecommendBlock({ mood }) {
-  if (!mood) return null;
-
-  // 未来这里会放调用 API 的逻辑
+function RecommendBlock({ recommendations, loading }) {
   return (
-    <div className="mt-8 w-full max-w-2xl bg-white shadow-lg rounded-xl p-6">
-      <h3 className="text-lg font-semibold mb-2">Recommended Movies for:</h3>
-      <p className="italic text-blue-600 mb-4">"{mood}"</p>
+    <div className="mt-8 text-left w-full max-w-3xl mx-auto">
+      <h2 className="text-xl font-semibold mb-3 text-gray-800">
+        🎬 Recommendations
+      </h2>
 
-      {/* 暂时是模拟结果 */}
-      <ul className="list-disc pl-5 text-gray-700">
-        <li>The Secret Life of Walter Mitty</li>
-        <li>Midnight in Paris</li>
-        <li>Inside Out</li>
-      </ul>
+      {loading ? (
+        <p className="text-gray-500 italic">🔄 Generating recommendations...</p>
+      ) : recommendations ? (
+        <pre className="whitespace-pre-wrap text-gray-700 bg-white p-4 rounded shadow">
+          {recommendations}
+        </pre>
+      ) : (
+        <p className="text-gray-400 italic">No recommendations yet.</p>
+      )}
     </div>
   );
 }

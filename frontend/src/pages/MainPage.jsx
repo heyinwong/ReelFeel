@@ -7,6 +7,8 @@ function MainPage() {
   const [username, setUsername] = useState("");
   const [mood, setMood] = useState("");
   const [submittedMood, setSubmittedMood] = useState("");
+  const [recommendations, setRecommendations] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -16,11 +18,21 @@ function MainPage() {
     }
   }, []);
 
-  const handleRecommend = (e) => {
+  const handleRecommend = async (e) => {
     e.preventDefault();
-    if (mood.trim() !== "") {
-      setSubmittedMood(mood.trim());
-    }
+    setSubmittedMood(mood);
+    setLoading(true);
+    const response = await fetch("http://localhost:8000/recommend", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ mood }),
+    });
+
+    const data = await response.json();
+    setRecommendations(data.recommendations);
+    setLoading(false);
   };
 
   const handleLogout = () => {
@@ -62,9 +74,11 @@ function MainPage() {
             Recommend Movies
           </button>
         </form>
-
-        {/* 推荐区块（仅在提交后显示） */}
-        <RecommendBlock mood={submittedMood} />
+        <RecommendBlock
+          mood={submittedMood}
+          recommendations={recommendations}
+          loading={loading}
+        />
       </main>
     </div>
   );

@@ -1,0 +1,16 @@
+# --- Python ---
+backend/venv/
+backend/__pycache__/
+*.pyc
+
+# --- Node.js ---
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# --- macOS system junk ---
+.DS_Store
+
+# --- Secrets ---
+.env
+.DS_Store
