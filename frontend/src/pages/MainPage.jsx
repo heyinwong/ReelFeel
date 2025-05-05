@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import RecommendBlock from "../components/RecommendBlock";
+import HeaderBar from "../components/HeaderBar";
 
 function MainPage() {
   const [username, setUsername] = useState("");
@@ -31,36 +32,7 @@ function MainPage() {
 
   return (
     <div className="w-screen h-screen bg-gradient-to-br from-gray-50 to-gray-200 flex flex-col">
-      {/* Header */}
-      <header className="flex justify-between items-center px-8 py-4 bg-white shadow-md">
-        <h1 className="text-2xl font-bold text-gray-800">🎬 ReelFeel</h1>
-        <nav className="space-x-6 text-gray-700">
-          <button
-            onClick={() => navigate("/watched")}
-            className="hover:underline"
-          >
-            Watched List
-          </button>
-          <button
-            onClick={() => navigate("/waiting")}
-            className="hover:underline"
-          >
-            Waiting List
-          </button>
-          {username ? (
-            <button onClick={handleLogout} className="hover:underline">
-              Logout ({username})
-            </button>
-          ) : (
-            <button
-              onClick={() => navigate("/login")}
-              className="hover:underline"
-            >
-              Login
-            </button>
-          )}
-        </nav>
-      </header>
+      <HeaderBar username={username} onLogout={handleLogout} />
 
       {/* Main content */}
       <main className="flex-1 flex flex-col justify-center items-center px-6">

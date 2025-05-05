@@ -8,9 +8,9 @@ function LoginPage() {
   const handleLogin = (e) => {
     e.preventDefault();
     if (username.trim() !== "") {
-      // 👇 保存用户名
+      // save user name
       localStorage.setItem("username", username);
-      // 跳转回主页
+      // return back
       navigate("/");
     }
   };
