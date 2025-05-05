@@ -13,4 +13,3 @@ frontend/.vite/
 
 # --- Secrets ---
 .env
-.DS_Store
