@@ -7,7 +7,7 @@ function MainPage() {
   const [username, setUsername] = useState("");
   const [mood, setMood] = useState("");
   const [submittedMood, setSubmittedMood] = useState("");
-  const [recommendations, setRecommendations] = useState("");
+  const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -22,17 +22,30 @@ function MainPage() {
     e.preventDefault();
     setSubmittedMood(mood);
     setLoading(true);
-    const response = await fetch("http://localhost:8000/recommend", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ mood }),
-    });
+    setRecommendations([]);
 
-    const data = await response.json();
-    setRecommendations(data.recommendations);
-    setLoading(false);
+    try {
+      const response = await fetch("http://localhost:8000/recommend", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ mood }),
+      });
+
+      const data = await response.json();
+
+      if (data.recommendations) {
+        setRecommendations(data.recommendations);
+      } else {
+        setRecommendations([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch recommendations:", error);
+      setRecommendations([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLogout = () => {
