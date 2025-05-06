@@ -91,6 +91,7 @@ function MainPage() {
           mood={submittedMood}
           recommendations={recommendations}
           loading={loading}
+          username={username}
         />
       </main>
     </div>

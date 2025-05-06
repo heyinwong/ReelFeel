@@ -1,17 +1,25 @@
-function RecommendBlock({ recommendations, loading }) {
-  // Called when user clicks "Add to Watched"
-  const handleAddToWatched = (movie) => {
-    const stored = JSON.parse(localStorage.getItem("watchedList")) || [];
-    const updated = [...stored, movie];
-    localStorage.setItem("watchedList", JSON.stringify(updated));
+function RecommendBlock({ recommendations, loading, username }) {
+  // Send to backend
+  const handleAdd = async (movie, type) => {
+    try {
+      const response = await fetch(`http://localhost:8000/${type}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ...movie, username }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to add to ${type}`);
+      }
+
+      console.log(`Movie added to ${type} successfully.`);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
-  // Called when user clicks "Add to Waiting"
-  const handleAddToWaiting = (movie) => {
-    const stored = JSON.parse(localStorage.getItem("waitingList")) || [];
-    const updated = [...stored, movie];
-    localStorage.setItem("waitingList", JSON.stringify(updated));
-  };
   return (
     <div className="mt-8 w-full max-w-4xl mx-auto">
       <h2 className="text-xl font-semibold mb-4 text-gray-800">
@@ -27,7 +35,6 @@ function RecommendBlock({ recommendations, loading }) {
               key={index}
               className="flex bg-white rounded-lg shadow p-4 gap-4"
             >
-              {/* Left section: Poster image */}
               {movie.poster ? (
                 <img
                   src={movie.poster}
@@ -40,7 +47,6 @@ function RecommendBlock({ recommendations, loading }) {
                 </div>
               )}
 
-              {/* Right section: Movie details */}
               <div className="flex flex-col justify-between flex-1">
                 <div>
                   <h3 className="text-lg font-bold text-gray-800">
@@ -54,17 +60,16 @@ function RecommendBlock({ recommendations, loading }) {
                   </p>
                 </div>
 
-                {/* Action buttons */}
                 <div className="mt-4 space-x-3">
                   <button
                     className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition"
-                    onClick={() => handleAddToWatched(movie)}
+                    onClick={() => handleAdd(movie, "watched")}
                   >
                     Add to Watched
                   </button>
                   <button
                     className="bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600 transition"
-                    onClick={() => handleAddToWaiting(movie)}
+                    onClick={() => handleAdd(movie, "waiting")}
                   >
                     Add to To Watch
                   </button>

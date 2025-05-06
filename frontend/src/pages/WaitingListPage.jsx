@@ -2,22 +2,47 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import HeaderBar from "../components/HeaderBar";
 import MovieCard from "../components/MovieCard";
-
+import MovieModal from "../components/MovieModal";
 function WaitingListPage() {
   const [movies, setMovies] = useState([]);
   const [username, setUsername] = useState("");
   const navigate = useNavigate();
-
+  const [selectedMovie, setSelectedMovie] = useState(null);
+  const handleDelete = async (movie) => {
+    try {
+      const res = await fetch(
+        `http://localhost:8000/waiting/${encodeURIComponent(
+          movie.title
+        )}?username=${username}`,
+        {
+          method: "DELETE",
+        }
+      );
+      if (res.ok) {
+        setMovies((prev) => prev.filter((m) => m.title !== movie.title));
+      } else {
+        console.error("Failed to delete:", await res.text());
+      }
+    } catch (err) {
+      console.error("Error:", err);
+    }
+  };
   useEffect(() => {
     const name = localStorage.getItem("username");
     if (!name) {
       navigate("/login");
     } else {
       setUsername(name);
+      fetch(`http://localhost:8000/waiting-list?username=${name}`)
+        .then((res) => res.json())
+        .then((data) => {
+          setMovies(data.movies || []);
+        })
+        .catch((err) => {
+          console.error("Failed to load to watch list:", err);
+          setMovies([]);
+        });
     }
-
-    const stored = JSON.parse(localStorage.getItem("waitingList")) || [];
-    setMovies(stored);
   }, [navigate]);
 
   const handleLogout = () => {
@@ -36,11 +61,20 @@ function WaitingListPage() {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
             {movies.map((movie, index) => (
-              <MovieCard key={index} {...movie} />
+              <MovieCard
+                key={index}
+                {...movie}
+                onDelete={handleDelete}
+                onClick={() => setSelectedMovie(movie)}
+              />
             ))}
           </div>
         )}
       </div>
+      <MovieModal
+        movie={selectedMovie}
+        onClose={() => setSelectedMovie(null)}
+      />
     </div>
   );
 }
