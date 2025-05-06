@@ -3,20 +3,20 @@ import { useNavigate } from "react-router-dom";
 import HeaderBar from "../components/HeaderBar";
 import MovieCard from "../components/MovieCard";
 import MovieModal from "../components/MovieModal";
+
 function WaitingListPage() {
   const [movies, setMovies] = useState([]);
   const [username, setUsername] = useState("");
   const navigate = useNavigate();
   const [selectedMovie, setSelectedMovie] = useState(null);
+
   const handleDelete = async (movie) => {
     try {
       const res = await fetch(
         `http://localhost:8000/waiting/${encodeURIComponent(
           movie.title
         )}?username=${username}`,
-        {
-          method: "DELETE",
-        }
+        { method: "DELETE" }
       );
       if (res.ok) {
         setMovies((prev) => prev.filter((m) => m.title !== movie.title));
@@ -27,23 +27,76 @@ function WaitingListPage() {
       console.error("Error:", err);
     }
   };
+
+  const handleRate = async (movie) => {
+    try {
+      const res = await fetch("http://localhost:8000/rate-waiting", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username,
+          title: movie.title,
+          user_rating: movie.userRating,
+        }),
+      });
+      if (res.ok) {
+        setMovies((prev) =>
+          prev.map((m) =>
+            m.title === movie.title
+              ? { ...m, user_rating: movie.userRating }
+              : m
+          )
+        );
+      }
+    } catch (err) {
+      console.error("Error rating movie:", err);
+    }
+  };
+
+  const handleLike = async (movie) => {
+    try {
+      const res = await fetch("http://localhost:8000/like-waiting", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username,
+          title: movie.title,
+          liked: movie.liked,
+        }),
+      });
+      if (res.ok) {
+        setMovies((prev) =>
+          prev.map((m) =>
+            m.title === movie.title ? { ...m, liked: movie.liked } : m
+          )
+        );
+      }
+    } catch (err) {
+      console.error("Error liking movie:", err);
+    }
+  };
+
   useEffect(() => {
     const name = localStorage.getItem("username");
     if (!name) {
       navigate("/login");
     } else {
       setUsername(name);
-      fetch(`http://localhost:8000/waiting-list?username=${name}`)
-        .then((res) => res.json())
-        .then((data) => {
-          setMovies(data.movies || []);
-        })
-        .catch((err) => {
-          console.error("Failed to load to watch list:", err);
-          setMovies([]);
-        });
+      fetchMovies(name);
     }
   }, [navigate]);
+
+  const fetchMovies = async (user) => {
+    try {
+      const res = await fetch(
+        `http://localhost:8000/waiting-list?username=${user}`
+      );
+      const data = await res.json();
+      setMovies(data.movies || []);
+    } catch (err) {
+      console.error("Error fetching waiting list:", err);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("username");
@@ -63,9 +116,15 @@ function WaitingListPage() {
             {movies.map((movie, index) => (
               <MovieCard
                 key={index}
-                {...movie}
+                title={movie.title}
+                poster={movie.poster}
+                rating={movie.tmdb_rating}
+                userRating={movie.user_rating}
+                liked={movie.liked}
                 onDelete={handleDelete}
                 onClick={() => setSelectedMovie(movie)}
+                onRate={handleRate}
+                onLike={handleLike}
               />
             ))}
           </div>

@@ -53,7 +53,7 @@ function RecommendBlock({ recommendations, loading, username }) {
                     {movie.title}
                   </h3>
                   <p className="text-sm text-yellow-600 mb-2">
-                    ⭐: {movie.rating ?? "N/A"}
+                    ⭐: {movie.tmdb_rating ?? "N/A"}
                   </p>
                   <p className="text-gray-700 text-sm">
                     {movie.description || "No description available."}
@@ -71,7 +71,7 @@ function RecommendBlock({ recommendations, loading, username }) {
                     className="bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600 transition"
                     onClick={() => handleAdd(movie, "waiting")}
                   >
-                    Add to Watch List
+                    Add to Watchlist
                   </button>
                 </div>
               </div>

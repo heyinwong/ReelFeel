@@ -16,7 +16,7 @@ function MovieModal({ movie, onClose }) {
           className="w-full max-h-96 object-contain rounded mb-4"
         />
         <h2 className="text-xl font-bold mb-2">{movie.title}</h2>
-        <p className="text-sm text-gray-700 mb-2">⭐ {movie.rating}</p>
+        <p className="text-sm text-gray-700 mb-2">⭐ {movie.tmdb_rating}</p>
         <p className="text-sm text-gray-600">{movie.description}</p>
       </div>
     </div>

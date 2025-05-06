@@ -32,8 +32,20 @@ class MovieInput(BaseModel):
     username: str
     title: str
     poster: str | None = None
-    rating: float | None = None
+    tmdb_rating: float | None = None   
+    user_rating: float | None = None   
     description: str | None = None
+    liked:bool | None=False
+
+class RatingInput(BaseModel):
+    username: str
+    title: str
+    user_rating: float
+
+class LikeInput(BaseModel):
+    username: str
+    title: str
+    liked: bool
 
 async def get_db():
     async with AsyncSessionLocal() as session:
@@ -75,14 +87,14 @@ async def fetch_movie_info(title: str):
             return {
                 "title": movie.get("title"),
                 "poster": TMDB_IMAGE_PREFIX + movie["poster_path"] if movie.get("poster_path") else None,
-                "rating": movie.get("vote_average"),
+                "tmdb_rating": movie.get("vote_average"),
                 "description": movie.get("overview")
             }
         else:
             return {
                 "title": title,
                 "poster": None,
-                "rating": None,
+                "tmdb_rating": None,
                 "description": "No description found."
             }
 
@@ -193,4 +205,89 @@ async def delete_watched_movie(title: str, username: str = Query(...)):
             else:
                 raise HTTPException(status_code=404, detail="Movie not found")
         except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/rate")
+async def rate_movie(data: RatingInput):
+    async with AsyncSessionLocal() as session:
+        try:
+            result = await session.execute(
+                select(WatchedMovie).where(
+                    WatchedMovie.username == data.username,
+                    WatchedMovie.title == data.title
+                )
+            )
+            movie = result.scalar_one_or_none()
+            if movie:
+                movie.user_rating = data.user_rating
+                await session.commit()
+                return {"message": f"Rated '{data.title}' with score {data.user_rating}"}
+            else:
+                raise HTTPException(status_code=404, detail="Movie not found in watched list")
+        except Exception as e:
+            await session.rollback()
+            raise HTTPException(status_code=500, detail=str(e))
+        
+@app.post("/like")
+async def like_movie(data: LikeInput):
+    async with AsyncSessionLocal() as session:
+        try:
+            result = await session.execute(
+                select(WatchedMovie).where(
+                    WatchedMovie.username == data.username,
+                    WatchedMovie.title == data.title
+                )
+            )
+            movie = result.scalar_one_or_none()
+            if movie:
+                movie.liked = data.liked
+                await session.commit()
+                return {"message": f"Movie '{data.title}' liked status set to {data.liked}"}
+            else:
+                raise HTTPException(status_code=404, detail="Movie not found in watched list")
+        except Exception as e:
+            await session.rollback()
+            raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/rate-waiting")
+async def rate_waiting_movie(data: RatingInput):
+    async with AsyncSessionLocal() as session:
+        try:
+            result = await session.execute(
+                select(WaitingMovie).where(
+                    WaitingMovie.username == data.username,
+                    WaitingMovie.title == data.title
+                )
+            )
+            movie = result.scalar_one_or_none()
+            if movie:
+                movie.user_rating = data.user_rating
+                await session.commit()
+                return {"message": f"Rated (waiting) '{data.title}' with {data.user_rating}"}
+            else:
+                raise HTTPException(status_code=404, detail="Movie not found in waiting list")
+        except Exception as e:
+            await session.rollback()
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/like-waiting")
+async def like_waiting_movie(data: LikeInput):
+    async with AsyncSessionLocal() as session:
+        try:
+            result = await session.execute(
+                select(WaitingMovie).where(
+                    WaitingMovie.username == data.username,
+                    WaitingMovie.title == data.title
+                )
+            )
+            movie = result.scalar_one_or_none()
+            if movie:
+                movie.liked = data.liked
+                await session.commit()
+                return {"message": f"Movie '{data.title}' liked status set to {data.liked} (waiting list)"}
+            else:
+                raise HTTPException(status_code=404, detail="Movie not found in waiting list")
+        except Exception as e:
+            await session.rollback()
             raise HTTPException(status_code=500, detail=str(e))

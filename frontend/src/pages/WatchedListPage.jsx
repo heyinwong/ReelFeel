@@ -3,11 +3,13 @@ import { useNavigate } from "react-router-dom";
 import HeaderBar from "../components/HeaderBar";
 import MovieCard from "../components/MovieCard";
 import MovieModal from "../components/MovieModal";
+
 function WatchedListPage() {
   const [movies, setMovies] = useState([]);
   const [username, setUsername] = useState("");
   const navigate = useNavigate();
   const [selectedMovie, setSelectedMovie] = useState(null);
+
   const handleDelete = async (movie) => {
     try {
       const res = await fetch(
@@ -25,6 +27,53 @@ function WatchedListPage() {
       }
     } catch (err) {
       console.error("Error:", err);
+    }
+  };
+  const handleRate = async (movie) => {
+    try {
+      const res = await fetch("http://localhost:8000/rate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username,
+          title: movie.title,
+          user_rating: movie.userRating,
+        }),
+      });
+      if (res.ok) {
+        setMovies((prev) =>
+          prev.map((m) =>
+            m.title === movie.title
+              ? { ...m, user_rating: movie.userRating }
+              : m
+          )
+        );
+      }
+    } catch (err) {
+      console.error("Error rating movie:", err);
+    }
+  };
+
+  const handleLike = async (movie) => {
+    try {
+      const res = await fetch("http://localhost:8000/like", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username,
+          title: movie.title,
+          liked: movie.liked,
+        }),
+      });
+      if (res.ok) {
+        setMovies((prev) =>
+          prev.map((m) =>
+            m.title === movie.title ? { ...m, liked: movie.liked } : m
+          )
+        );
+      }
+    } catch (err) {
+      console.error("Error liking movie:", err);
     }
   };
 
@@ -60,7 +109,9 @@ function WatchedListPage() {
     <div className="min-h-screen bg-gray-100 w-full">
       <HeaderBar username={username} onLogout={handleLogout} />
       <div className="px-6 py-8 max-w-screen-xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6 text-gray-800">Watched List</h1>
+        <h1 className="text-3xl font-bold mb-6 text-gray-800">
+          Watched Collection
+        </h1>
         {movies.length === 0 ? (
           <p className="text-gray-500">Your watched list is empty.</p>
         ) : (
@@ -68,9 +119,15 @@ function WatchedListPage() {
             {movies.map((movie, index) => (
               <MovieCard
                 key={index}
-                {...movie}
+                title={movie.title}
+                poster={movie.poster}
+                rating={movie.tmdb_rating}
+                userRating={movie.user_rating}
+                liked={movie.liked}
                 onDelete={handleDelete}
                 onClick={() => setSelectedMovie(movie)}
+                onRate={handleRate}
+                onLike={handleLike}
               />
             ))}
           </div>

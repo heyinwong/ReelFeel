@@ -16,13 +16,13 @@ function HeaderBar({ username, onLogout }) {
           onClick={() => navigate("/watched")}
           className="hover:underline"
         >
-          Watched List
+          Reel Log
         </button>
         <button
           onClick={() => navigate("/waiting")}
           className="hover:underline"
         >
-          Waiting List
+          Watchlist
         </button>
         {username ? (
           <button onClick={onLogout} className="hover:underline">
