@@ -71,7 +71,7 @@ function RecommendBlock({ recommendations, loading, username }) {
                     className="bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600 transition"
                     onClick={() => handleAdd(movie, "waiting")}
                   >
-                    Add to To Watch
+                    Add to Watch List
                   </button>
                 </div>
               </div>
