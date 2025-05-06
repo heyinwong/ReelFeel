@@ -7,13 +7,6 @@ Potential functions to have:
 - watched list and rating/like,hate system
 - waiting list (to watch)
 
-## folder structure
-
-ReelFeel/
-├── backend/ # FastAPI 后端
-├── frontend/ # React 前端
-└── README.md
-
 ## to start
 
 ### backend（FastAPI）
