@@ -26,12 +26,14 @@ client = OpenAI()
 
 # --- TMDB Constants ---
 TMDB_SEARCH_URL = "https://api.themoviedb.org/3/search/movie"
-TMDB_IMAGE_PREFIX = "https://image.tmdb.org/t/p/w500"
+TMDB_POSTER_PREFIX = "https://image.tmdb.org/t/p/w342"
+TMDB_BACKDROP_PREFIX = "https://image.tmdb.org/t/p/w780"
 
 class MovieInput(BaseModel):
     username: str
     title: str
     poster: str | None = None
+    backdrop: str | None = None
     tmdb_rating: float | None = None   
     user_rating: float | None = None   
     description: str | None = None
@@ -72,6 +74,7 @@ class MoodInput(BaseModel):
     mood: str
 
 # --- TMDB API 查询逻辑 ---
+
 async def fetch_movie_info(title: str):
     params = {
         "query": title,
@@ -86,18 +89,19 @@ async def fetch_movie_info(title: str):
             movie = data["results"][0]
             return {
                 "title": movie.get("title"),
-                "poster": TMDB_IMAGE_PREFIX + movie["poster_path"] if movie.get("poster_path") else None,
+                "poster": TMDB_POSTER_PREFIX + movie["poster_path"] if movie.get("poster_path") else None,
+                "backdrop": TMDB_BACKDROP_PREFIX + movie["backdrop_path"] if movie.get("backdrop_path") else None,
                 "tmdb_rating": movie.get("vote_average"),
                 "description": movie.get("overview")
             }
         else:
             return {
                 "title": title,
-                "poster": None,
+                "poster_url": None,
+                "backdrop_url": None,
                 "tmdb_rating": None,
                 "description": "No description found."
             }
-
 # --- 推荐接口逻辑 ---
 @app.post("/recommend")
 async def recommend_movies(data: MoodInput):
@@ -129,7 +133,16 @@ async def recommend_movies(data: MoodInput):
 @app.post("/watched")
 async def add_watched_movie(movie: MovieInput):
     async with AsyncSessionLocal() as session:
-        new_movie = WatchedMovie(**movie.dict())
+        new_movie = WatchedMovie(
+    username=movie.username,
+    title=movie.title,
+    poster=movie.poster,
+    backdrop=movie.backdrop,  # ✅ 添加
+    tmdb_rating=movie.tmdb_rating,
+    user_rating=movie.user_rating,
+    description=movie.description,
+    liked=movie.liked
+)
         session.add(new_movie)
         try:
             await session.commit()
@@ -141,7 +154,16 @@ async def add_watched_movie(movie: MovieInput):
 @app.post("/waiting")
 async def add_waiting_movie(movie: MovieInput):
     async with AsyncSessionLocal() as session:
-        new_movie = WaitingMovie(**movie.dict())
+        new_movie = WaitingMovie(
+    username=movie.username,
+    title=movie.title,
+    poster=movie.poster,
+    backdrop=movie.backdrop,  # ✅ 添加
+    tmdb_rating=movie.tmdb_rating,
+    user_rating=movie.user_rating,
+    description=movie.description,
+    liked=movie.liked
+)
         session.add(new_movie)
         try:
             await session.commit()
@@ -192,7 +214,7 @@ async def delete_watched_movie(title: str, username: str = Query(...)):
     async with AsyncSessionLocal() as session:
         try:
             result = await session.execute(
-                select(WatchedMovie).where(
+                select(WaitingMovie).where(
                     WatchedMovie.username == username,
                     WatchedMovie.title == title
                 )

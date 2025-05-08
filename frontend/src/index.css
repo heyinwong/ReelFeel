@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "daisyui";
+@plugin "daisyui";
 
 /* Optional: layout safety reset */
 html,
@@ -9,4 +9,15 @@ body,
   width: 100%;
   margin: 0;
   padding: 0;
+}
+
+.fade-in-text {
+  opacity: 0;
+  animation: fadeIn 2s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
 }

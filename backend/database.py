@@ -22,6 +22,7 @@ async def get_watched_movies(username: str):
             {
                 "title": movie.title,
                 "poster": movie.poster,
+                "backdrop": movie.backdrop,
                 "tmdb_rating": movie.tmdb_rating,
                 "user_rating": movie.user_rating,
                 "description": movie.description,
@@ -40,6 +41,7 @@ async def get_waiting_movies(username: str):
             {
                 "title": movie.title,
                 "poster": movie.poster,
+                "backdrop": movie.backdrop,
                 "tmdb_rating": movie.tmdb_rating,
                 "user_rating": movie.user_rating,
                 "description": movie.description,

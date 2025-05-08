@@ -1,5 +1,8 @@
+import { useState } from "react";
+
 function RecommendBlock({ recommendations, loading, username }) {
-  // Send to backend
+  const [current, setCurrent] = useState(0);
+
   const handleAdd = async (movie, type) => {
     try {
       const response = await fetch(`http://localhost:8000/${type}`, {
@@ -9,78 +12,110 @@ function RecommendBlock({ recommendations, loading, username }) {
         },
         body: JSON.stringify({ ...movie, username }),
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to add to ${type}`);
-      }
-
-      console.log(`Movie added to ${type} successfully.`);
+      if (!response.ok) throw new Error(`Failed to add to ${type}`);
     } catch (error) {
       console.error(error);
     }
   };
 
+  const handlePrev = () => {
+    setCurrent((prev) => (prev === 0 ? recommendations.length - 1 : prev - 1));
+  };
+
+  const handleNext = () => {
+    setCurrent((prev) => (prev === recommendations.length - 1 ? 0 : prev + 1));
+  };
+
+  if (loading) {
+    return (
+      <p className="text-gray-400 italic text-center mt-6">
+        Loading recommendations...
+      </p>
+    );
+  }
+
+  if (!recommendations || recommendations.length === 0) {
+    return (
+      <p className="text-gray-500 italic text-center mt-6">
+        No recommendations to display.
+      </p>
+    );
+  }
+
+  const total = recommendations.length;
+  const prevIndex = (current - 1 + total) % total;
+  const nextIndex = (current + 1) % total;
+
+  const visibleMovies = [
+    recommendations[prevIndex],
+    recommendations[current],
+    recommendations[nextIndex],
+  ];
+
+  const selectedMovie = recommendations[current];
+
   return (
-    <div className="mt-8 w-full max-w-4xl mx-auto">
-      <h2 className="text-xl font-semibold mb-4 text-gray-800">
-        Movie Recommendations
-      </h2>
+    <div className="w-full max-w-6xl mx-auto mt-12 relative">
+      {/* Carousel */}
+      <div className="flex justify-center items-center gap-6 relative h-60">
+        <button
+          onClick={handlePrev}
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 text-2xl text-white bg-black bg-opacity-30 hover:bg-opacity-50 rounded-full px-3 py-1"
+        >
+          ←
+        </button>
+        <button
+          onClick={handleNext}
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 text-2xl text-white bg-black bg-opacity-30 hover:bg-opacity-50 rounded-full px-3 py-1"
+        >
+          →
+        </button>
 
-      {loading ? (
-        <p className="text-gray-500 italic">Loading recommendations...</p>
-      ) : recommendations && recommendations.length > 0 ? (
-        <div className="space-y-6">
-          {recommendations.map((movie, index) => (
-            <div
-              key={index}
-              className="flex bg-white rounded-lg shadow p-4 gap-4"
-            >
-              {movie.poster ? (
-                <img
-                  src={movie.poster}
-                  alt={movie.title}
-                  className="w-32 h-auto rounded object-cover"
-                />
-              ) : (
-                <div className="w-32 h-48 bg-gray-200 flex items-center justify-center text-gray-500">
-                  No Image
-                </div>
-              )}
+        {visibleMovies.map((movie, idx) => (
+          <div
+            key={movie.title + idx}
+            className={`transition-all duration-300 flex-shrink-0 rounded-xl overflow-hidden shadow-md cursor-pointer ${
+              idx === 1 ? "w-80 h-52 scale-110 z-10" : "w-40 h-28 opacity-50"
+            }`}
+            style={{
+              backgroundImage: "url('/card.jpg')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              padding: idx === 1 ? "10px" : "4px",
+            }}
+            onClick={() => setCurrent((current + idx - 1 + total) % total)}
+          >
+            <img
+              src={movie.backdrop}
+              alt={movie.title}
+              className="w-full h-full object-cover rounded"
+            />
+          </div>
+        ))}
+      </div>
 
-              <div className="flex flex-col justify-between flex-1">
-                <div>
-                  <h3 className="text-lg font-bold text-gray-800">
-                    {movie.title}
-                  </h3>
-                  <p className="text-sm text-yellow-600 mb-2">
-                    ⭐: {movie.tmdb_rating ?? "N/A"}
-                  </p>
-                  <p className="text-gray-700 text-sm">
-                    {movie.description || "No description available."}
-                  </p>
-                </div>
-
-                <div className="mt-4 space-x-3">
-                  <button
-                    className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition"
-                    onClick={() => handleAdd(movie, "watched")}
-                  >
-                    Add to Watched
-                  </button>
-                  <button
-                    className="bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600 transition"
-                    onClick={() => handleAdd(movie, "waiting")}
-                  >
-                    Add to Watchlist
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+      {/* Detail Block */}
+      <div className="bg-white/90 text-black mt-8 rounded-xl shadow-md px-6 py-5 max-w-3xl mx-auto text-center min-h-[240px]">
+        <h3 className="text-xl font-bold mb-2">{selectedMovie.title}</h3>
+        <p className="text-yellow-600 font-semibold mb-2">
+          ⭐ {selectedMovie.tmdb_rating ?? "N/A"}
+        </p>
+        <p className="text-sm mb-4">{selectedMovie.description}</p>
+        <div className="flex justify-center gap-3">
+          <button
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+            onClick={() => handleAdd(selectedMovie, "watched")}
+          >
+            Watched
+          </button>
+          <button
+            className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded"
+            onClick={() => handleAdd(selectedMovie, "waiting")}
+          >
+            Watchlist
+          </button>
         </div>
-      ) : (
-        <p className="text-gray-400 italic">No recommendations to display.</p>
-      )}
+      </div>
     </div>
   );
 }
