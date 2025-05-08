@@ -2,6 +2,7 @@ import { useState } from "react";
 
 function RecommendBlock({ recommendations, loading, username }) {
   const [current, setCurrent] = useState(0);
+  const [feedback, setFeedback] = useState("");
 
   const handleAdd = async (movie, type) => {
     try {
@@ -12,9 +13,19 @@ function RecommendBlock({ recommendations, loading, username }) {
         },
         body: JSON.stringify({ ...movie, username }),
       });
-      if (!response.ok) throw new Error(`Failed to add to ${type}`);
+
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.detail || "Failed to add");
+
+      setFeedback(
+        `✅ Added to ${type === "watched" ? "Watched List" : "Watchlist"}`
+      );
+      setTimeout(() => setFeedback(""), 3000);
     } catch (error) {
       console.error(error);
+      setFeedback("❌ Failed to add movie.");
+      setTimeout(() => setFeedback(""), 3000);
     }
   };
 
@@ -52,12 +63,11 @@ function RecommendBlock({ recommendations, loading, username }) {
     recommendations[nextIndex],
   ];
 
-  const selectedMovie = recommendations[current];
-
   return (
     <div className="w-full max-w-6xl mx-auto mt-12 relative">
       {/* Carousel */}
       <div className="flex justify-center items-center gap-6 relative h-60">
+        {/* Arrows */}
         <button
           onClick={handlePrev}
           className="absolute left-0 top-1/2 -translate-y-1/2 z-10 text-2xl text-white bg-black bg-opacity-30 hover:bg-opacity-50 rounded-full px-3 py-1"
@@ -96,25 +106,30 @@ function RecommendBlock({ recommendations, loading, username }) {
 
       {/* Detail Block */}
       <div className="bg-white/90 text-black mt-8 rounded-xl shadow-md px-6 py-5 max-w-3xl mx-auto text-center min-h-[240px]">
-        <h3 className="text-xl font-bold mb-2">{selectedMovie.title}</h3>
+        <h3 className="text-xl font-bold mb-2">
+          {recommendations[current].title}
+        </h3>
         <p className="text-yellow-600 font-semibold mb-2">
-          ⭐ {selectedMovie.tmdb_rating ?? "N/A"}
+          ⭐ {recommendations[current].tmdb_rating ?? "N/A"}
         </p>
-        <p className="text-sm mb-4">{selectedMovie.description}</p>
+        <p className="text-sm mb-4">{recommendations[current].description}</p>
         <div className="flex justify-center gap-3">
           <button
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-            onClick={() => handleAdd(selectedMovie, "watched")}
+            onClick={() => handleAdd(recommendations[current], "watched")}
           >
             Watched
           </button>
           <button
             className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded"
-            onClick={() => handleAdd(selectedMovie, "waiting")}
+            onClick={() => handleAdd(recommendations[current], "waiting")}
           >
             Watchlist
           </button>
         </div>
+        {feedback && (
+          <p className="text-sm mt-4 text-green-600 font-medium">{feedback}</p>
+        )}
       </div>
     </div>
   );
