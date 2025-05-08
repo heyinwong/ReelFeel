@@ -210,22 +210,22 @@ async def delete_watched_movie(title: str, username: str = Query(...)):
             raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/waiting/{title}")
-async def delete_watched_movie(title: str, username: str = Query(...)):
+async def delete_waiting_movie(title: str, username: str = Query(...)):
     async with AsyncSessionLocal() as session:
         try:
             result = await session.execute(
                 select(WaitingMovie).where(
-                    WatchedMovie.username == username,
-                    WatchedMovie.title == title
+                    WaitingMovie.username == username,
+                    WaitingMovie.title == title
                 )
             )
             movie = result.scalar_one_or_none()
             if movie:
                 await session.delete(movie)
                 await session.commit()
-                return {"message": "Deleted from to watch list"}
+                return {"message": "Deleted from waiting list"}
             else:
-                raise HTTPException(status_code=404, detail="Movie not found")
+                raise HTTPException(status_code=404, detail="Movie not found in waiting list")
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
