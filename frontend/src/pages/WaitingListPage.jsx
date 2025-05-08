@@ -1,80 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import HeaderBar from "../components/HeaderBar";
 import MovieCard from "../components/MovieCard";
-import MovieModal from "../components/MovieModal";
+import HeaderBar from "../components/HeaderBar";
+import toast from "react-hot-toast";
 
 function WaitingListPage() {
   const [movies, setMovies] = useState([]);
   const [username, setUsername] = useState("");
   const navigate = useNavigate();
-  const [selectedMovie, setSelectedMovie] = useState(null);
-
-  const handleDelete = async (movie) => {
-    try {
-      const res = await fetch(
-        `http://localhost:8000/waiting/${encodeURIComponent(
-          movie.title
-        )}?username=${username}`,
-        { method: "DELETE" }
-      );
-      if (res.ok) {
-        setMovies((prev) => prev.filter((m) => m.title !== movie.title));
-      } else {
-        console.error("Failed to delete:", await res.text());
-      }
-    } catch (err) {
-      console.error("Error:", err);
-    }
-  };
-
-  const handleRate = async (movie) => {
-    try {
-      const res = await fetch("http://localhost:8000/rate-waiting", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username,
-          title: movie.title,
-          user_rating: movie.userRating,
-        }),
-      });
-      if (res.ok) {
-        setMovies((prev) =>
-          prev.map((m) =>
-            m.title === movie.title
-              ? { ...m, user_rating: movie.userRating }
-              : m
-          )
-        );
-      }
-    } catch (err) {
-      console.error("Error rating movie:", err);
-    }
-  };
-
-  const handleLike = async (movie) => {
-    try {
-      const res = await fetch("http://localhost:8000/like-waiting", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username,
-          title: movie.title,
-          liked: movie.liked,
-        }),
-      });
-      if (res.ok) {
-        setMovies((prev) =>
-          prev.map((m) =>
-            m.title === movie.title ? { ...m, liked: movie.liked } : m
-          )
-        );
-      }
-    } catch (err) {
-      console.error("Error liking movie:", err);
-    }
-  };
 
   useEffect(() => {
     const name = localStorage.getItem("username");
@@ -98,6 +31,61 @@ function WaitingListPage() {
     }
   };
 
+  const handleDelete = async (movie) => {
+    try {
+      const res = await fetch(
+        `http://localhost:8000/waiting/${encodeURIComponent(
+          movie.title
+        )}?username=${username}`,
+        { method: "DELETE" }
+      );
+      if (res.ok) {
+        setMovies((prev) => prev.filter((m) => m.title !== movie.title));
+        toast.success("Deleted from Watchlist");
+      } else {
+        console.error("Delete failed:", await res.text());
+      }
+    } catch (err) {
+      console.error("Error deleting movie:", err);
+    }
+  };
+
+  const handleRate = async (data) => {
+    try {
+      const res = await fetch("http://localhost:8000/rate-waiting", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        setMovies((prev) => prev.filter((m) => m.title !== data.title));
+        toast.success("Rated & moved to Reel Log");
+      } else {
+        console.error("Rate failed:", await res.text());
+      }
+    } catch (err) {
+      console.error("Error rating:", err);
+    }
+  };
+
+  const handleLike = async (data) => {
+    try {
+      const res = await fetch("http://localhost:8000/like-waiting", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        setMovies((prev) => prev.filter((m) => m.title !== data.title));
+        toast.success("Liked & moved to Reel Log");
+      } else {
+        console.error("Like failed:", await res.text());
+      }
+    } catch (err) {
+      console.error("Error liking:", err);
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("username");
     setUsername("");
@@ -108,21 +96,21 @@ function WaitingListPage() {
     <div className="min-h-screen bg-gray-100 w-full">
       <HeaderBar username={username} onLogout={handleLogout} />
       <div className="px-6 py-8 max-w-screen-xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6 text-gray-800">Waiting List</h1>
+        <h1 className="text-3xl font-bold mb-6 text-gray-800">Watchlist</h1>
         {movies.length === 0 ? (
-          <p className="text-gray-500">Your waiting list is empty.</p>
+          <p className="text-gray-500">Your watchlist is empty.</p>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-            {movies.map((movie, index) => (
+            {movies.map((movie) => (
               <MovieCard
-                key={index}
+                key={movie.title}
                 title={movie.title}
                 poster={movie.poster}
                 rating={movie.tmdb_rating}
                 userRating={movie.user_rating}
+                username={username}
                 liked={movie.liked}
                 onDelete={handleDelete}
-                onClick={() => setSelectedMovie(movie)}
                 onRate={handleRate}
                 onLike={handleLike}
               />
@@ -130,10 +118,6 @@ function WaitingListPage() {
           </div>
         )}
       </div>
-      <MovieModal
-        movie={selectedMovie}
-        onClose={() => setSelectedMovie(null)}
-      />
     </div>
   );
 }

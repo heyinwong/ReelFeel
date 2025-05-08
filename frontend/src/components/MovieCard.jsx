@@ -10,22 +10,21 @@ function MovieCard({
   onClick,
   onRate,
   onLike,
+  username,
 }) {
-  const movie = { title, poster, rating, userRating, liked };
-
   const [hoveredRating, setHoveredRating] = useState(null);
   const [localUserRating, setLocalUserRating] = useState(userRating || 0);
   const [localLiked, setLocalLiked] = useState(liked || false);
 
   const handleRate = (val) => {
     setLocalUserRating(val);
-    onRate && onRate({ ...movie, userRating: val });
+    onRate && onRate({ title, user_rating: val, username });
   };
 
   const handleLikeToggle = () => {
     const newLiked = !localLiked;
     setLocalLiked(newLiked);
-    onLike && onLike({ ...movie, liked: newLiked });
+    onLike && onLike({ title, liked: newLiked, username });
   };
 
   const renderStars = () => {
@@ -75,24 +74,18 @@ function MovieCard({
 
   return (
     <div
-      onClick={() => onClick && onClick(movie)}
+      onClick={() => onClick && onClick({ title })}
       className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition w-48 cursor-pointer flex flex-col relative"
     >
       <img src={poster} alt={title} className="w-full h-72 object-cover" />
-
       <div className="p-3 flex-1 flex flex-col justify-between">
         <div>
-          <h3 className="font-semibold text-sm mb-1 truncate">{title}</h3>
-
-          <div className="flex items-center mt-1">
-            <span className="text-xs text-gray-600 mr-2">You:</span>
-            {renderStars()}
-          </div>
+          <h3 className="font-bold text-lg text-center mt-2">{title}</h3>
+          <div className="flex justify-center mt-2">{renderStars()}</div>
         </div>
       </div>
 
       <div className="flex justify-between items-center px-3 pb-3">
-        {/* Like button */}
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -116,13 +109,11 @@ function MovieCard({
           </svg>
         </button>
 
-        {/* Delete button */}
         {onDelete && (
           <button
             onClick={(e) => {
               e.stopPropagation();
-              console.log("Deleting movie:", movie.title);
-              onDelete(movie);
+              onDelete({ title });
             }}
             className="bg-red-500 text-white text-sm py-1 px-2 rounded hover:bg-red-600 transition"
           >
