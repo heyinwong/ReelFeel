@@ -118,19 +118,14 @@ function WatchedListPage() {
           <p className="text-gray-100">Your watched list is empty.</p>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-            {movies.map((movie, index) => (
+            {movies.map((movie) => (
               <MovieCard
-                key={index}
+                key={movie.title}
                 title={movie.title}
                 poster={movie.poster}
-                rating={movie.tmdb_rating}
-                user_rating={movie.user_rating}
+                userRating={movie.user_rating}
                 liked={movie.liked}
-                username={username}
-                onDelete={handleDelete}
                 onClick={() => setSelectedMovie(movie)}
-                onRate={handleRate}
-                onLike={handleLike}
               />
             ))}
           </div>
