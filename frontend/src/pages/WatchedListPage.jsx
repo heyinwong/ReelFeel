@@ -7,8 +7,30 @@ import MovieModal from "../components/MovieModal";
 function WatchedListPage() {
   const [movies, setMovies] = useState([]);
   const [username, setUsername] = useState("");
-  const navigate = useNavigate();
   const [selectedMovie, setSelectedMovie] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const name = localStorage.getItem("username");
+    if (!name) {
+      navigate("/login");
+    } else {
+      setUsername(name);
+      fetchMovies(name);
+    }
+  }, [navigate]);
+
+  const fetchMovies = async (user) => {
+    try {
+      const res = await fetch(
+        `http://localhost:8000/watched-list?username=${user}`
+      );
+      const data = await res.json();
+      setMovies(data.movies || []);
+    } catch (err) {
+      console.error("Error fetching watched list:", err);
+    }
+  };
 
   const handleDelete = async (movie) => {
     try {
@@ -16,9 +38,7 @@ function WatchedListPage() {
         `http://localhost:8000/watched/${encodeURIComponent(
           movie.title
         )}?username=${username}`,
-        {
-          method: "DELETE",
-        }
+        { method: "DELETE" }
       );
       if (res.ok) {
         setMovies((prev) => prev.filter((m) => m.title !== movie.title));
@@ -26,9 +46,10 @@ function WatchedListPage() {
         console.error("Failed to delete:", await res.text());
       }
     } catch (err) {
-      console.error("Error:", err);
+      console.error("Error deleting movie:", err);
     }
   };
+
   const handleRate = async (movie) => {
     try {
       const res = await fetch("http://localhost:8000/rate", {
@@ -37,14 +58,14 @@ function WatchedListPage() {
         body: JSON.stringify({
           username,
           title: movie.title,
-          user_rating: movie.userRating,
+          user_rating: movie.user_rating, // ✅ fixed key
         }),
       });
       if (res.ok) {
         setMovies((prev) =>
           prev.map((m) =>
             m.title === movie.title
-              ? { ...m, user_rating: movie.userRating }
+              ? { ...m, user_rating: movie.user_rating }
               : m
           )
         );
@@ -77,28 +98,6 @@ function WatchedListPage() {
     }
   };
 
-  useEffect(() => {
-    const name = localStorage.getItem("username");
-    if (!name) {
-      navigate("/login");
-    } else {
-      setUsername(name);
-      fetchMovies(name);
-    }
-  }, [navigate]);
-
-  const fetchMovies = async (user) => {
-    try {
-      const res = await fetch(
-        `http://localhost:8000/watched-list?username=${user}`
-      );
-      const data = await res.json();
-      setMovies(data.movies || []);
-    } catch (err) {
-      console.error("Error fetching watched list:", err);
-    }
-  };
-
   const handleLogout = () => {
     localStorage.removeItem("username");
     setUsername("");
@@ -106,14 +105,17 @@ function WatchedListPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 w-full">
+    <div
+      className="min-h-screen bg-cover bg-center w-full"
+      style={{
+        backgroundImage: "url('/reel_wall.jpg')",
+        backgroundAttachment: "fixed",
+      }}
+    >
       <HeaderBar username={username} onLogout={handleLogout} />
       <div className="px-6 py-8 max-w-screen-xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6 text-gray-800">
-          Watched Collection
-        </h1>
         {movies.length === 0 ? (
-          <p className="text-gray-500">Your watched list is empty.</p>
+          <p className="text-gray-100">Your watched list is empty.</p>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
             {movies.map((movie, index) => (
@@ -122,8 +124,9 @@ function WatchedListPage() {
                 title={movie.title}
                 poster={movie.poster}
                 rating={movie.tmdb_rating}
-                userRating={movie.user_rating}
+                user_rating={movie.user_rating}
                 liked={movie.liked}
+                username={username}
                 onDelete={handleDelete}
                 onClick={() => setSelectedMovie(movie)}
                 onRate={handleRate}

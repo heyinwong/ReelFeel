@@ -19,7 +19,7 @@ function RecommendBlock({ recommendations, loading, username }) {
       if (!response.ok) throw new Error(data.detail || "Failed to add");
 
       setFeedback(
-        `✅ Added to ${type === "watched" ? "Watched List" : "Watchlist"}`
+        `✅ Added to ${type === "watched" ? "Reel Log" : "Watchlist"}`
       );
       setTimeout(() => setFeedback(""), 3000);
     } catch (error) {
