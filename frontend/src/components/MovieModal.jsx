@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-
+import toast from "react-hot-toast";
 const moodOptions = [
   { emoji: "😭", tag: "Moved" },
   { emoji: "😂", tag: "Hilarious" },
@@ -21,6 +21,9 @@ function MovieModal({ movie, onClose, onRate, onLike, onReview }) {
   const [localLiked, setLocalLiked] = useState(movie?.liked || false);
   const [review, setReview] = useState(movie?.review || "");
   const [selectedMoods, setSelectedMoods] = useState([]);
+  const [watchDate, setWatchDate] = useState(
+    movie?.watched_at || new Date().toISOString().split("T")[0]
+  );
 
   if (!movie) return null;
 
@@ -36,7 +39,13 @@ function MovieModal({ movie, onClose, onRate, onLike, onReview }) {
   };
 
   const handleReviewSave = () => {
-    onReview?.({ ...movie, review, moods: selectedMoods });
+    onReview?.({
+      ...movie,
+      review,
+      moods: selectedMoods,
+      watched_at: watchDate,
+    });
+    toast.success("Review saved!");
   };
 
   const toggleMood = (tag) => {
@@ -125,11 +134,13 @@ function MovieModal({ movie, onClose, onRate, onLike, onReview }) {
             </div>
           </div>
 
-          {/* Back */}
+          {/* Back (Review Page) */}
           <div className="absolute inset-0 bg-white p-6 rounded-xl shadow-lg [backface-visibility:hidden] [transform:rotateY(180deg)]">
             <h3 className="text-xl font-semibold mb-4 text-center">
               Your Review
             </h3>
+
+            {/* Moods */}
             <div className="flex flex-wrap gap-2 justify-center mb-4">
               {moodOptions.map(({ emoji, tag }) => (
                 <button
@@ -145,38 +156,76 @@ function MovieModal({ movie, onClose, onRate, onLike, onReview }) {
                 </button>
               ))}
             </div>
+
+            {/* Watch Date */}
+            <div className="mb-4">
+              <label className="block text-sm mb-1 text-gray-700 font-medium">
+                Watched on:
+              </label>
+              <input
+                type="date"
+                value={watchDate}
+                onChange={(e) => setWatchDate(e.target.value)}
+                className="border rounded p-2 w-full text-sm"
+              />
+            </div>
+
+            {/* Review */}
             <textarea
               className="w-full h-40 border rounded p-2 text-sm mb-4"
               value={review}
               onChange={(e) => setReview(e.target.value)}
               placeholder="Write what you felt..."
             />
-            <div className="flex flex-col gap-4 items-center">
-              <div className="flex gap-3 items-center">
-                {renderStars()}
-                <button
-                  className={`btn btn-sm ${
-                    localLiked ? "btn-error" : "btn-outline"
-                  }`}
-                  onClick={handleLike}
-                >
-                  {localLiked ? "♥ Liked" : "♡ Like"}
-                </button>
-              </div>
-              <div className="flex justify-between w-full">
-                <button
-                  className="btn btn-sm btn-outline"
-                  onClick={() => setIsFlipped(false)}
-                >
-                  ← Back to Details
-                </button>
-                <button
-                  className="btn btn-sm btn-primary"
-                  onClick={handleReviewSave}
-                >
-                  Save
-                </button>
-              </div>
+
+            {/* Rating + Like */}
+            <div className="flex gap-3 items-center justify-center mb-4">
+              {renderStars()}
+              <button
+                className={`btn btn-sm ${
+                  localLiked ? "btn-error" : "btn-outline"
+                }`}
+                onClick={handleLike}
+              >
+                {localLiked ? "♥ Liked" : "♡ Like"}
+              </button>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-3">
+              <button
+                className="btn btn-sm btn-error"
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      "Are you sure you want to delete this movie?"
+                    )
+                  ) {
+                    onClose();
+                    if (movie && movie.title) {
+                      onReview?.({ ...movie, delete: true });
+                      toast.success("Movie deleted.");
+                    }
+                  }
+                }}
+              >
+                Delete
+              </button>
+              <button
+                className="btn btn-sm btn-primary"
+                onClick={() => {
+                  handleReviewSave();
+                  toast.success("Review saved!");
+                }}
+              >
+                Save
+              </button>
+              <button
+                className="btn btn-sm"
+                onClick={() => setIsFlipped(false)}
+              >
+                ← Back
+              </button>
             </div>
           </div>
         </motion.div>
