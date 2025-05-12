@@ -4,22 +4,26 @@ function RecommendBlock({ recommendations, loading, username }) {
   const [current, setCurrent] = useState(0);
   const [feedback, setFeedback] = useState("");
 
-  const handleAdd = async (movie, type) => {
+  const handleAdd = async (movie, listType) => {
+    const endpoint = listType === "watched" ? "watched" : "waiting";
     try {
-      const response = await fetch(`http://localhost:8000/${type}`, {
+      const response = await fetch(`http://localhost:8000/${endpoint}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ ...movie, username }),
+        body: JSON.stringify({
+          ...movie,
+          username,
+          watch_date: new Date().toISOString().split("T")[0], // 仅 watched 可用
+        }),
       });
 
       const data = await response.json();
-
       if (!response.ok) throw new Error(data.detail || "Failed to add");
 
       setFeedback(
-        `✅ Added to ${type === "watched" ? "Reel Log" : "Watchlist"}`
+        `✅ Added to ${listType === "watched" ? "Reel Log" : "Watchlist"}`
       );
       setTimeout(() => setFeedback(""), 3000);
     } catch (error) {

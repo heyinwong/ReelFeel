@@ -1,16 +1,31 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Optional
-from database import engine, async_session
-from models import Base, WatchedMovie, WaitingMovie
-from sqlalchemy.future import select
-from sqlalchemy import delete, update
-import datetime
+import openai
+import os
+import json
+import asyncio
+import aiohttp
+from sqlalchemy import select, delete
+from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import datetime
+
+from database import (
+    async_session,
+    get_watched_movies,
+    get_waiting_movies,
+    add_to_watched,
+    add_to_waiting,
+    move_to_watched,
+)
+from models import WatchedMovie, WaitingMovie
+
+# Set OpenAI API key
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 app = FastAPI()
 
-# CORS setup
+# Allow CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -19,130 +34,162 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.on_event("startup")
-async def on_startup():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+# ---------- Pydantic Models ----------
+class MoodInput(BaseModel):
+    mood: str
 
-# ========== Pydantic Models ==========
-class MovieBase(BaseModel):
+class AddMovieInput(BaseModel):
     username: str
     title: str
-    poster: Optional[str] = None
-    backdrop: Optional[str] = None
-    tmdb_rating: Optional[float] = None
-    description: Optional[str] = None
+    poster: str
+    backdrop: str
+    tmdb_rating: float | None = None
+    description: str
 
-class ReviewData(MovieBase):
-    user_rating: Optional[int] = None
-    liked: Optional[bool] = None
-    review: Optional[str] = None
-    moods: Optional[List[str]] = None
-    watch_date: Optional[str] = None  # ISO Date string
-    from_waiting: Optional[bool] = False
-    delete: Optional[bool] = False
+# ---------- TMDB Movie Info Helper ----------
+async def fetch_movie_info(title: str):
+    api_key = os.getenv("TMDB_API_KEY")
+    url = f"https://api.themoviedb.org/3/search/movie?api_key={api_key}&query={title}"
 
-# ========== API Endpoints ==========
-@app.post("/review")
-async def review_movie(data: ReviewData):
-    async with async_session() as session:
-        # DELETE if requested
-        if data.delete:
-            stmt = delete(WatchedMovie).where(
-                WatchedMovie.username == data.username,
-                WatchedMovie.title == data.title
-            )
-            await session.execute(stmt)
-            await session.commit()
-            return {"message": "Movie deleted from watched list."}
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+            if resp.status != 200:
+                raise HTTPException(status_code=500, detail="TMDB API Error")
 
-        # FROM WAITING ➜ Move
-        if data.from_waiting:
-            # Delete from waiting
-            await session.execute(
-                delete(WaitingMovie).where(
-                    WaitingMovie.username == data.username,
-                    WaitingMovie.title == data.title
-                )
-            )
+            data = await resp.json()
+            if not data["results"]:
+                return {
+                    "title": title,
+                    "description": "Not found",
+                    "poster": "",
+                    "backdrop": "",
+                    "tmdb_rating": None,
+                }
 
-        # Insert or update in watched
-        result = await session.execute(
-            select(WatchedMovie).where(
-                WatchedMovie.username == data.username,
-                WatchedMovie.title == data.title
-            )
+            movie = data["results"][0]
+            return {
+                "title": movie["title"],
+                "description": movie.get("overview", "No description."),
+                "poster": f"https://image.tmdb.org/t/p/w500{movie['poster_path']}" if movie.get("poster_path") else "",
+                "backdrop": f"https://image.tmdb.org/t/p/w780{movie['backdrop_path']}" if movie.get("backdrop_path") else "",
+                "tmdb_rating": movie.get("vote_average"),
+            }
+
+# ---------- Routes ----------
+
+@app.post("/recommend")
+async def recommend_movies(data: MoodInput):
+    prompt = (
+        f"Return ONLY a JSON array of 3 movie titles that match this mood: '{data.mood}'. "
+        "No explanation, no description, no year. Example: [\"Up\", \"La La Land\", \"Her\"]"
+    )
+
+    try:
+        response = openai.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
         )
-        movie = result.scalars().first()
+        raw_content = response.choices[0].message.content.strip()
+        try:
+            titles = json.loads(raw_content)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=500, detail=f"Invalid JSON:\n{raw_content}")
 
-        if movie:
-            # update existing
-            movie.user_rating = data.user_rating
-            movie.liked = data.liked
-            movie.review = data.review
-            movie.moods = ",".join(data.moods or [])
-            movie.watch_date = data.watch_date or movie.watch_date
-        else:
-            movie = WatchedMovie(
-                username=data.username,
-                title=data.title,
-                poster=data.poster,
-                backdrop=data.backdrop,
-                tmdb_rating=data.tmdb_rating,
-                description=data.description,
-                user_rating=data.user_rating,
-                liked=data.liked,
-                review=data.review,
-                moods=",".join(data.moods or []),
-                watch_date=data.watch_date or datetime.date.today().isoformat()
-            )
-            session.add(movie)
+        movie_details = await asyncio.gather(*(fetch_movie_info(t) for t in titles))
+        return {"recommendations": movie_details}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-        await session.commit()
-        return {"message": "Review saved."}
 
 @app.get("/watched-list")
 async def get_watched(username: str):
-    async with async_session() as session:
-        result = await session.execute(
-            select(WatchedMovie).where(WatchedMovie.username == username)
-        )
-        movies = result.scalars().all()
-        return {"movies": [m.dict() for m in movies]}
+    return {"movies": await get_watched_movies(username)}
 
 @app.get("/waiting-list")
 async def get_waiting(username: str):
+    return {"movies": await get_waiting_movies(username)}
+
+@app.post("/watched")
+async def add_watched(movie: AddMovieInput):
     async with async_session() as session:
-        result = await session.execute(
-            select(WaitingMovie).where(WaitingMovie.username == username)
+        await add_to_watched(session, movie.dict())
+        await session.commit()
+    return {"message": "Added to watched."}
+
+@app.post("/waiting")
+async def add_waiting(movie: AddMovieInput):
+    async with async_session() as session:
+        await add_to_waiting(session, movie.dict())
+        await session.commit()
+    return {"message": "Added to waiting."}
+
+@app.delete("/watched/{title}")
+async def delete_watched(title: str, username: str):
+    async with async_session() as session:
+        await session.execute(
+            delete(WatchedMovie).where(
+                (WatchedMovie.username == username) & (WatchedMovie.title == title)
+            )
         )
-        movies = result.scalars().all()
-        return {"movies": [m.dict() for m in movies]}
-
-@app.post("/add-watched")
-async def add_watched(movie: MovieBase):
-    async with async_session() as session:
-        new_movie = WatchedMovie(**movie.dict())
-        session.add(new_movie)
         await session.commit()
-        return {"message": "Added to watched list"}
-
-@app.post("/add-waiting")
-async def add_waiting(movie: MovieBase):
-    async with async_session() as session:
-        new_movie = WaitingMovie(**movie.dict())
-        session.add(new_movie)
-        await session.commit()
-        return {"message": "Added to waiting list"}
+    return {"message": "Deleted from watched list"}
 
 @app.delete("/waiting/{title}")
 async def delete_waiting(title: str, username: str):
     async with async_session() as session:
         await session.execute(
             delete(WaitingMovie).where(
-                WaitingMovie.username == username,
-                WaitingMovie.title == title
+                (WaitingMovie.username == username) & (WaitingMovie.title == title)
             )
         )
         await session.commit()
-        return {"message": "Deleted from waiting list"}
+    return {"message": "Deleted from waiting list"}
+
+@app.post("/review")
+async def review_movie(payload: dict = Body(...)):
+    print("📥 Received review payload:", payload)
+
+    from_waiting = payload.pop("fromWaiting", False)
+    print("📌 fromWaiting popped:", from_waiting)
+
+    async with async_session() as session:
+        if from_waiting:
+            print("➡️ Entering move_to_watched()...")
+            try:
+                await move_to_watched(session, payload)
+                print("✅ move_to_watched() completed")
+                await session.commit()
+                print("✅ session.commit() completed")
+            except Exception as e:
+                print("❌ Error in from_waiting block:", e)
+                raise
+        else:
+            try:
+                result = await session.execute(
+                    select(WatchedMovie).where(
+                        (WatchedMovie.username == payload["username"]) &
+                        (WatchedMovie.title == payload["title"])
+                    )
+                )
+                movie = result.scalar_one_or_none()
+                if movie:
+                    print("✏️ Updating existing watched movie:", movie.title)
+                    movie.review = payload.get("review", movie.review)
+                    moods = payload.get("moods", [])
+                    movie.moods = ", ".join(moods) if isinstance(moods, list) else moods
+                    date_str = payload.get("watch_date", None)
+                    if date_str:
+                        movie.watch_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+                    movie.user_rating = payload.get("user_rating", movie.user_rating)
+                    movie.liked = payload.get("liked", movie.liked)
+                    await session.commit()
+                    print("✅ Updated and committed")
+                else:
+                    print("⚠️ Movie not found in watched list")
+                    raise HTTPException(status_code=404, detail="Movie not found in watched list")
+            except Exception as e:
+                print("❌ Error in watched update block:", e)
+                raise
+
+    return {"message": "Review saved."}

@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import MovieCard from "../components/MovieCard";
 import HeaderBar from "../components/HeaderBar";
+import MovieModal from "../components/MovieModal";
 import toast from "react-hot-toast";
 
 function WaitingListPage() {
   const [movies, setMovies] = useState([]);
   const [username, setUsername] = useState("");
+  const [selectedMovie, setSelectedMovie] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -41,7 +43,7 @@ function WaitingListPage() {
       );
       if (res.ok) {
         setMovies((prev) => prev.filter((m) => m.title !== movie.title));
-        toast.success("Deleted from Watchlist");
+        toast.success("Removed from Watchlist");
       } else {
         console.error("Delete failed:", await res.text());
       }
@@ -50,39 +52,30 @@ function WaitingListPage() {
     }
   };
 
-  const handleRate = async (data) => {
-    try {
-      const res = await fetch("http://localhost:8000/rate-waiting", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (res.ok) {
-        setMovies((prev) => prev.filter((m) => m.title !== data.title));
-        toast.success("Rated & moved to Reel Log");
-      } else {
-        console.error("Rate failed:", await res.text());
-      }
-    } catch (err) {
-      console.error("Error rating:", err);
-    }
-  };
+  const handleReview = async (movie) => {
+    const hasReviewData =
+      movie.user_rating > 0 ||
+      movie.liked ||
+      (movie.review && movie.review.trim() !== "") ||
+      (movie.moods && movie.moods.length > 0);
 
-  const handleLike = async (data) => {
-    try {
-      const res = await fetch("http://localhost:8000/like-waiting", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (res.ok) {
-        setMovies((prev) => prev.filter((m) => m.title !== data.title));
-        toast.success("Liked & moved to Reel Log");
-      } else {
-        console.error("Like failed:", await res.text());
+    if (movie.fromWaiting && hasReviewData) {
+      try {
+        await fetch("http://localhost:8000/review", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...movie,
+            username,
+            fromWaiting: true,
+          }),
+        });
+        await handleDelete(movie); // Remove from frontend
+        toast.success("Moved to Watched");
+      } catch (err) {
+        console.error("❌ Failed to move movie to watched:", err);
+        toast.error("Failed to save review");
       }
-    } catch (err) {
-      console.error("Error liking:", err);
     }
   };
 
@@ -104,20 +97,18 @@ function WaitingListPage() {
             {movies.map((movie) => (
               <MovieCard
                 key={movie.title}
-                title={movie.title}
-                poster={movie.poster}
-                rating={movie.tmdb_rating}
-                userRating={movie.user_rating}
-                username={username}
-                liked={movie.liked}
-                onDelete={handleDelete}
-                onRate={handleRate}
-                onLike={handleLike}
+                movie={{ ...movie, mode: "waiting" }}
+                onClick={setSelectedMovie}
               />
             ))}
           </div>
         )}
       </div>
+      <MovieModal
+        movie={selectedMovie}
+        onClose={() => setSelectedMovie(null)}
+        onReview={handleReview}
+      />
     </div>
   );
 }

@@ -16,14 +16,14 @@ async def init_db():
         await conn.run_sync(Base.metadata.create_all)
 
 async def get_watched_movies(username: str):
-    async with AsyncSessionLocal() as session:
+    async with async_session() as session:
         result = await session.execute(
             select(WatchedMovie).where(WatchedMovie.username == username)
         )
         return result.scalars().all()
 
 async def get_waiting_movies(username: str):
-    async with AsyncSessionLocal() as session:
+    async with async_session() as session:
         result = await session.execute(
             select(WaitingMovie).where(WaitingMovie.username == username)
         )
@@ -96,11 +96,13 @@ async def move_to_watched(session: AsyncSession, movie_data: dict):
         "backdrop": waiting_movie.backdrop,
         "tmdb_rating": waiting_movie.tmdb_rating,
         "description": waiting_movie.description,
-        "user_rating": movie_data.get("user_rating", None),
+        "user_rating": movie_data.get("user_rating"),
         "liked": movie_data.get("liked", False),
         "review": movie_data.get("review", ""),
-        "moods": movie_data.get("moods", ""),
-        "watch_date": movie_data.get("watch_date", None),
+        "moods": ", ".join(movie_data.get("moods") or []) if isinstance(movie_data.get("moods"), list) else (movie_data.get("moods") or ""),
+        "watch_date": datetime.strptime(movie_data["watch_date"], "%Y-%m-%d").date()
+            if movie_data.get("watch_date")
+            else None,
     }
 
     existing = await session.execute(
@@ -111,5 +113,5 @@ async def move_to_watched(session: AsyncSession, movie_data: dict):
     )
     if existing.scalar():
         return
-
+    print("🟡 trying to insert into watched:", full_data)
     session.add(WatchedMovie(**full_data))

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import toast from "react-hot-toast";
+
 const moodOptions = [
   { emoji: "😭", tag: "Moved" },
   { emoji: "😂", tag: "Hilarious" },
@@ -20,12 +20,13 @@ function MovieModal({ movie, onClose, onRate, onLike, onReview }) {
   const [localRating, setLocalRating] = useState(movie?.user_rating || 0);
   const [localLiked, setLocalLiked] = useState(movie?.liked || false);
   const [review, setReview] = useState(movie?.review || "");
-  const [selectedMoods, setSelectedMoods] = useState([]);
-  const [watchDate, setWatchDate] = useState(
-    movie?.watched_at || new Date().toISOString().split("T")[0]
-  );
+  const [selectedMoods, setSelectedMoods] = useState(movie?.moods || []);
+  const [watchDate, setWatchDate] = useState(movie?.watch_date || "");
+  const [saveFeedback, setSaveFeedback] = useState("");
 
   if (!movie) return null;
+
+  const isFromWaiting = movie.mode === "waiting";
 
   const handleRate = (val) => {
     setLocalRating(val);
@@ -38,14 +39,33 @@ function MovieModal({ movie, onClose, onRate, onLike, onReview }) {
     onLike?.({ ...movie, liked: newLiked });
   };
 
-  const handleReviewSave = () => {
-    onReview?.({
+  const handleReviewSave = async () => {
+    const hasData =
+      localRating > 0 ||
+      localLiked ||
+      review.trim() !== "" ||
+      selectedMoods.length > 0;
+
+    if (!hasData) {
+      setSaveFeedback("Nothing to save.");
+      setTimeout(() => setSaveFeedback(""), 2500);
+      return;
+    }
+
+    await onReview?.({
       ...movie,
+      user_rating: localRating,
+      liked: localLiked,
       review,
       moods: selectedMoods,
-      watched_at: watchDate,
+      watch_date: watchDate,
+      ...(isFromWaiting ? { fromWaiting: true } : {}),
     });
-    toast.success("Review saved!");
+
+    setSaveFeedback("Saved!");
+    setTimeout(() => setSaveFeedback(""), 2500);
+
+    if (isFromWaiting) onClose();
   };
 
   const toggleMood = (tag) => {
@@ -191,41 +211,40 @@ function MovieModal({ movie, onClose, onRate, onLike, onReview }) {
               </button>
             </div>
 
+            {/* Feedback */}
+            {saveFeedback && (
+              <p className="text-sm text-green-600 font-medium text-center mb-2">
+                {saveFeedback}
+              </p>
+            )}
+
             {/* Action Buttons */}
             <div className="flex justify-end gap-3">
-              <button
-                className="btn btn-sm btn-error"
-                onClick={() => {
-                  if (
-                    window.confirm(
-                      "Are you sure you want to delete this movie?"
-                    )
-                  ) {
+              {!isFromWaiting && (
+                <button
+                  className="btn btn-sm btn-error"
+                  onClick={() => {
+                    onReview?.({ ...movie, delete: true });
                     onClose();
-                    if (movie && movie.title) {
-                      onReview?.({ ...movie, delete: true });
-                      toast.success("Movie deleted.");
-                    }
-                  }
-                }}
-              >
-                Delete
-              </button>
+                  }}
+                >
+                  Delete
+                </button>
+              )}
               <button
                 className="btn btn-sm btn-primary"
-                onClick={() => {
-                  handleReviewSave();
-                  toast.success("Review saved!");
-                }}
+                onClick={handleReviewSave}
               >
                 Save
               </button>
-              <button
-                className="btn btn-sm"
-                onClick={() => setIsFlipped(false)}
-              >
-                ← Back
-              </button>
+              {!isFromWaiting && (
+                <button
+                  className="btn btn-sm"
+                  onClick={() => setIsFlipped(false)}
+                >
+                  ← Back
+                </button>
+              )}
             </div>
           </div>
         </motion.div>

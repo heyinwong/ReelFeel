@@ -50,51 +50,37 @@ function WatchedListPage() {
     }
   };
 
-  const handleRate = async (movie) => {
-    try {
-      const res = await fetch("http://localhost:8000/rate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username,
-          title: movie.title,
-          user_rating: movie.user_rating, // ✅ fixed key
-        }),
-      });
-      if (res.ok) {
-        setMovies((prev) =>
-          prev.map((m) =>
-            m.title === movie.title
-              ? { ...m, user_rating: movie.user_rating }
-              : m
-          )
-        );
-      }
-    } catch (err) {
-      console.error("Error rating movie:", err);
-    }
-  };
+  // 删除 handleRate 和 handleLike
+  // 替换 handleReview 为：
 
-  const handleLike = async (movie) => {
+  const handleReview = async (movie) => {
+    if (movie.delete) {
+      await handleDelete(movie);
+      return;
+    }
+
     try {
-      const res = await fetch("http://localhost:8000/like", {
+      const res = await fetch("http://localhost:8000/review", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           username,
           title: movie.title,
+          user_rating: movie.user_rating,
           liked: movie.liked,
+          review: movie.review,
+          moods: movie.moods,
+          watch_date: movie.watch_date,
         }),
       });
+
       if (res.ok) {
         setMovies((prev) =>
-          prev.map((m) =>
-            m.title === movie.title ? { ...m, liked: movie.liked } : m
-          )
+          prev.map((m) => (m.title === movie.title ? { ...m, ...movie } : m))
         );
       }
     } catch (err) {
-      console.error("Error liking movie:", err);
+      console.error("Error saving review:", err);
     }
   };
 
@@ -121,11 +107,8 @@ function WatchedListPage() {
             {movies.map((movie) => (
               <MovieCard
                 key={movie.title}
-                title={movie.title}
-                poster={movie.poster}
-                userRating={movie.user_rating}
-                liked={movie.liked}
-                onClick={() => setSelectedMovie(movie)}
+                movie={{ ...movie, mode: "watched" }}
+                onClick={setSelectedMovie}
               />
             ))}
           </div>
@@ -134,6 +117,7 @@ function WatchedListPage() {
       <MovieModal
         movie={selectedMovie}
         onClose={() => setSelectedMovie(null)}
+        onReview={handleReview}
       />
     </div>
   );
