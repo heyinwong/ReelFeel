@@ -3,11 +3,12 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.future import select
 from sqlalchemy import delete
 from models import WatchedMovie, WaitingMovie
+from base import Base
 
 DATABASE_URL = "sqlite+aiosqlite:///./app.db"
 
 engine = create_async_engine(DATABASE_URL, echo=True)
-AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 async def init_db():
     from models import Base
@@ -95,8 +96,11 @@ async def move_to_watched(session: AsyncSession, movie_data: dict):
         "backdrop": waiting_movie.backdrop,
         "tmdb_rating": waiting_movie.tmdb_rating,
         "description": waiting_movie.description,
-        "user_rating": movie_data.get("user_rating", waiting_movie.user_rating),
-        "liked": movie_data.get("liked", waiting_movie.liked),
+        "user_rating": movie_data.get("user_rating", None),
+        "liked": movie_data.get("liked", False),
+        "review": movie_data.get("review", ""),
+        "moods": movie_data.get("moods", ""),
+        "watch_date": movie_data.get("watch_date", None),
     }
 
     existing = await session.execute(
