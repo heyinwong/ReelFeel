@@ -50,11 +50,7 @@ function RecommendBlock({ recommendations, loading, username }) {
   }
 
   if (!recommendations || recommendations.length === 0) {
-    return (
-      <p className="text-gray-500 italic text-center mt-6">
-        No recommendations to display.
-      </p>
-    );
+    return;
   }
 
   const total = recommendations.length;

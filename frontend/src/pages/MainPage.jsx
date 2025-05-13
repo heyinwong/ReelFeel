@@ -56,44 +56,61 @@ function MainPage() {
   };
 
   return (
-    <div className="w-screen h-screen bg-gradient-to-br from-gray-50 to-gray-200 flex flex-col">
-      <HeaderBar username={username} onLogout={handleLogout} />
+    <div
+      className="relative min-h-screen w-full text-white flex flex-col items-center justify-center"
+      style={{
+        backgroundImage: "url('/blue_light_bg.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        backgroundColor: "#000000",
+      }}
+    >
+      <HeaderBar
+        username={username}
+        onLogout={handleLogout}
+        className="fixed top-0 left-0 w-full z-50"
+      />
 
-      {/* Main content */}
-      <main className="flex-1 flex flex-col justify-center items-center px-6">
-        <h2 className="text-2xl font-medium mb-4 text-gray-700">
-          How are you feeling today?
-        </h2>
+      {/* 主文字区域 */}
+      <div className="z-10 text-center px-4 mt-10">
+        <h1 className="text-4xl font-bold mb-2 drop-shadow-md">
+          Your mood. Your movie.
+        </h1>
+        <p className="text-white text-opacity-60 text-lg mb-8">
+          Discover a film that fits your mood.
+        </p>
+      </div>
 
-        {username && (
-          <p className="text-gray-600 mb-4">Hi {username}! Welcome back 👋</p>
-        )}
-
-        <form
-          onSubmit={handleRecommend}
-          className="w-full max-w-xl flex flex-col items-center"
+      {/* 推荐表单 */}
+      <form
+        onSubmit={handleRecommend}
+        className="z-10 w-full max-w-xl bg-black/50 backdrop-blur-md p-6 rounded-xl shadow-lg flex flex-col items-center"
+      >
+        <button
+          type="submit"
+          className="bg-gradient-to-r from-gray-200/10 to-white/10 border border-white/30 text-white py-2 px-6 rounded-md hover:bg-white/20 transition mb-4"
         >
-          <input
-            type="text"
-            value={mood}
-            onChange={(e) => setMood(e.target.value)}
-            placeholder="e.g. I feel tired and want something cozy"
-            className="w-full px-4 py-3 border border-gray-300 rounded-md mb-4 focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
-          <button
-            type="submit"
-            className="bg-blue-500 text-white py-2 px-6 rounded-md hover:bg-blue-600 transition"
-          >
-            Recommend Movies
-          </button>
-        </form>
+          Recommend Movies
+        </button>
+        <input
+          type="text"
+          value={mood}
+          onChange={(e) => setMood(e.target.value)}
+          placeholder="e.g. Something nostalgic and heartwarming"
+          className="w-full px-4 py-3 rounded-md bg-white/20 text-white placeholder-gray-300 border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+      </form>
+
+      {/* 推荐结果 */}
+      <div className="mt-10 px-4 w-full z-10">
         <RecommendBlock
           mood={submittedMood}
           recommendations={recommendations}
           loading={loading}
           username={username}
         />
-      </main>
+      </div>
     </div>
   );
 }

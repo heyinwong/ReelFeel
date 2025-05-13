@@ -1,11 +1,10 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import ReelButton from "./ReelButton";
 
-function HeaderBar({ username, onLogout }) {
+function HeaderBar({ username, onLogout, className = "" }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // 动态 tagline 逻辑
   const getTagline = () => {
     switch (location.pathname) {
       case "/":
@@ -22,9 +21,11 @@ function HeaderBar({ username, onLogout }) {
   };
 
   return (
-    <header className="w-full bg-gradient-to-b from-black via-gray-800 to-gray-700 text-white shadow-md border-b border-gray-700">
+    <header
+      className={`bg-gradient-to-b from-black via-gray-800 to-gray-700 text-white shadow-md border-b border-gray-700 ${className}`}
+    >
       <div className="max-w-screen-xl mx-auto flex flex-col sm:flex-row items-center justify-between px-6 py-3 space-y-2 sm:space-y-0">
-        {/* Left Section: Logo + Tagline */}
+        {/* Left Section */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 text-center sm:text-left">
           <h1
             onClick={() => navigate("/")}
@@ -37,7 +38,7 @@ function HeaderBar({ username, onLogout }) {
           </p>
         </div>
 
-        {/* Right Section: Navigation Buttons */}
+        {/* Right Section */}
         <nav className="flex gap-2 sm:gap-3 items-center">
           <ReelButton size="lg" onClick={() => navigate("/watched")}>
             📽️ Reel Log
