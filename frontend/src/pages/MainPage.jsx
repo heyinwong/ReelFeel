@@ -1,41 +1,91 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import RecommendBlock from "../components/RecommendBlock";
 import HeaderBar from "../components/HeaderBar";
 
 function MainPage() {
   const [username, setUsername] = useState("");
-  const [mode, setMode] = useState("mood"); // "mood" or "search"
+  const [mode, setMode] = useState("mood");
   const [input, setInput] = useState("");
   const [submittedMood, setSubmittedMood] = useState("");
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [selectedSuggestion, setSelectedSuggestion] = useState(null);
+  const debounceRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const name = localStorage.getItem("username");
-    if (name) {
-      setUsername(name);
-    }
+    if (name) setUsername(name);
   }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSubmittedMood(input);
-    setLoading(true);
-    setRecommendations([]);
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setInput(value);
+    setSelectedSuggestion(null);
+    if (mode === "search") {
+      setRecommendations([]);
+    }
 
-    const endpoint = mode === "mood" ? "recommend" : "search";
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    if (value.length >= 2 && mode === "search") {
+      debounceRef.current = setTimeout(() => {
+        fetchSuggestions(value);
+      }, 300);
+    } else {
+      setSuggestions([]);
+    }
+  };
+
+  const fetchSuggestions = async (query) => {
+    try {
+      const res = await fetch(
+        `http://localhost:8000/search_suggestions?query=${encodeURIComponent(
+          query
+        )}`
+      );
+      const data = await res.json();
+      setSuggestions(data.suggestions || []);
+    } catch (err) {
+      console.error("Failed to fetch suggestions", err);
+      setSuggestions([]);
+    }
+  };
+
+  const handleSubmit = async (e = null) => {
+    if (e) e.preventDefault();
+    setSuggestions([]);
+    setSubmittedMood(input);
+    setRecommendations([]);
+    setLoading(true);
 
     try {
-      const response = await fetch(`http://localhost:8000/${endpoint}`, {
+      const endpoint =
+        mode === "search"
+          ? "http://localhost:8000/search"
+          : "http://localhost:8000/recommend";
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mood: input }),
       });
 
       const data = await response.json();
-      setRecommendations(data.recommendations || []);
+      const raw = data.recommendations || [];
+
+      const normalized = raw.map((movie) => ({
+        title: movie.title,
+        description:
+          movie.description || movie.overview || "No description available.",
+        tmdb_rating: movie.tmdb_rating || movie.rating || "N/A",
+        poster: movie.poster || "",
+        backdrop: movie.backdrop || "",
+      }));
+
+      setRecommendations(normalized);
     } catch (error) {
       console.error("Failed to fetch:", error);
       setRecommendations([]);
@@ -68,7 +118,6 @@ function MainPage() {
         className="fixed top-0 left-0 w-full z-50"
       />
 
-      {/* 顶部文字 */}
       <div className="z-10 text-center px-4 mt-10">
         <h1 className="text-4xl font-bold mb-2 drop-shadow-md">
           {mode === "mood"
@@ -82,17 +131,22 @@ function MainPage() {
         </p>
       </div>
 
-      {/* 输入 + 切换 + 提交 */}
       <form
         onSubmit={handleSubmit}
-        className="z-10 w-full max-w-3xl bg-black/40 backdrop-blur-md px-6 py-5 rounded-xl shadow-lg flex flex-col items-center"
+        className="relative z-10 w-full max-w-3xl bg-black/40 backdrop-blur-md px-6 py-5 rounded-xl shadow-lg flex flex-col items-center"
       >
         <div className="flex items-center w-full gap-3 mb-4">
-          {/* 切换按钮 */}
           <div className="relative group">
             <button
               type="button"
-              onClick={() => setMode(mode === "mood" ? "search" : "mood")}
+              onClick={() => {
+                setMode(mode === "mood" ? "search" : "mood");
+                setRecommendations([]);
+                setSuggestions([]);
+                setSubmittedMood("");
+                setSelectedSuggestion(null);
+                setInput("");
+              }}
               className="w-[130px] h-[48px] border border-white/30 bg-white/10 text-white rounded-md text-base font-medium hover:bg-white/20 transition cursor-pointer"
             >
               {mode === "mood" ? "Mood" : "Search"}
@@ -104,11 +158,10 @@ function MainPage() {
             </div>
           </div>
 
-          {/* 输入框 */}
           <input
             type="text"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={handleInputChange}
             placeholder={
               mode === "mood"
                 ? "e.g. Something nostalgic and heartwarming"
@@ -117,7 +170,6 @@ function MainPage() {
             className="flex-1 h-[48px] px-4 bg-white/20 text-white placeholder-gray-300 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 text-base"
           />
 
-          {/* 提交按钮 */}
           <button
             type="submit"
             className="w-[130px] h-[48px] text-center border border-white/30 bg-white/10 text-white rounded-md text-base font-medium hover:bg-white/20 transition"
@@ -125,9 +177,57 @@ function MainPage() {
             {mode === "mood" ? "Recommend" : "Find Movie"}
           </button>
         </div>
+
+        {mode === "search" && suggestions.length > 0 && (
+          <ul className="absolute top-full mt-1 left-0 w-full max-w-xl bg-black/80 border border-white/20 rounded-md shadow-lg z-50 text-white overflow-hidden">
+            {suggestions.map((movie) => (
+              <li
+                key={movie.id}
+                className="flex items-center gap-3 px-4 py-2 hover:bg-white/10 cursor-pointer"
+                onClick={async () => {
+                  setSelectedSuggestion(movie);
+                  setSuggestions([]);
+                  setInput(movie.title);
+
+                  try {
+                    const res = await fetch(
+                      `http://localhost:8000/movie_by_title?title=${encodeURIComponent(
+                        movie.title
+                      )}`
+                    );
+                    const data = await res.json();
+                    const result = data.recommendations || [];
+
+                    const normalized = result.map((movie) => ({
+                      title: movie.title,
+                      description:
+                        movie.description || "No description available.",
+                      tmdb_rating: movie.tmdb_rating || "N/A",
+                      poster: movie.poster || "",
+                      backdrop: movie.backdrop || "",
+                    }));
+
+                    setRecommendations(normalized);
+                  } catch (err) {
+                    console.error("Failed to fetch movie detail by title", err);
+                    setRecommendations([]);
+                  }
+                }}
+              >
+                {movie.poster && (
+                  <img
+                    src={movie.poster}
+                    alt={movie.title}
+                    className="w-8 h-12 object-cover rounded"
+                  />
+                )}
+                <span className="text-sm">{movie.title}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </form>
 
-      {/* 推荐 / 搜索结果 */}
       <div className="mt-10 px-4 w-full z-10">
         <RecommendBlock
           mood={submittedMood}

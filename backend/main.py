@@ -230,3 +230,49 @@ async def search_suggestions(query: str = Query(..., min_length=1)):
     ]
 
     return {"suggestions": suggestions}
+
+@app.post("/search")
+async def search_movies(data: MoodInput):
+    """
+    接收关键词并返回最多 3 个匹配电影的完整信息
+    """
+    query = data.mood
+
+    try:
+        api_key = os.getenv("TMDB_API_KEY")
+        url = f"https://api.themoviedb.org/3/search/movie?api_key={api_key}&query={query}&language=en-US&include_adult=false&page=1"
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url)
+            response.raise_for_status()
+            data = response.json()
+
+        results = data.get("results", [])[:3]
+        if not results:
+            return {"recommendations": []}
+
+        # 利用 fetch_movie_info 获取完整详情（但你可以选用更轻量方式）
+        # 也可以直接在这里统一字段名，避免前端再判断
+        recommendations = [
+            {
+                "title": movie.get("title", "Unknown"),
+                "description": movie.get("overview", "No description."),
+                "poster": f"https://image.tmdb.org/t/p/w500{movie['poster_path']}" if movie.get("poster_path") else "",
+                "backdrop": f"https://image.tmdb.org/t/p/w780{movie['backdrop_path']}" if movie.get("backdrop_path") else "",
+                "tmdb_rating": movie.get("vote_average", "N/A"),
+            }
+            for movie in results
+        ]
+
+        return {"recommendations": recommendations}
+
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@app.get("/movie_by_title")
+async def movie_by_title(title: str):
+    try:
+        movie = await fetch_movie_info(title)
+        return {"recommendations": [movie]}  
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
