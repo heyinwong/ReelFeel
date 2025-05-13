@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Body
+from fastapi import FastAPI, HTTPException, Body, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import openai
@@ -9,6 +9,8 @@ import aiohttp
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
+import httpx
+from fastapi.responses import JSONResponse
 
 from database import (
     async_session,
@@ -193,3 +195,38 @@ async def review_movie(payload: dict = Body(...)):
                 raise
 
     return {"message": "Review saved."}
+
+@app.get("/search_suggestions")
+async def search_suggestions(query: str = Query(..., min_length=1)):
+    api_key = os.getenv("TMDB_API_KEY")
+    """
+    提供实时搜索建议：返回与关键词匹配的最多 5 部电影（标题 + 海报路径 + ID）
+    """
+    url = "https://api.themoviedb.org/3/search/movie"
+    params = {
+        "api_key": api_key,
+        "query": query,
+        "language": "en-US",
+        "include_adult": False,
+        "page": 1,
+    }
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, params=params)
+            response.raise_for_status()
+            data = response.json()
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+    results = data.get("results", [])[:5]
+    suggestions = [
+        {
+            "id": movie["id"],
+            "title": movie["title"],
+            "poster": f"https://image.tmdb.org/t/p/w185{movie['poster_path']}" if movie.get("poster_path") else "",
+        }
+        for movie in results if movie.get("title")
+    ]
+
+    return {"suggestions": suggestions}
