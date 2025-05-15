@@ -1,8 +1,10 @@
 import { useState } from "react";
 
-function RecommendBlock({ recommendations, loading, username }) {
+function RecommendBlock({ recommendations, loading, username, onCardClick }) {
   const [current, setCurrent] = useState(0);
   const [feedback, setFeedback] = useState("");
+
+  const total = recommendations.length;
 
   const handleAdd = async (movie, listType) => {
     const endpoint = listType === "watched" ? "watched" : "waiting";
@@ -15,7 +17,7 @@ function RecommendBlock({ recommendations, loading, username }) {
         body: JSON.stringify({
           ...movie,
           username,
-          watch_date: new Date().toISOString().split("T")[0], // 仅 watched 可用
+          watch_date: new Date().toISOString().split("T")[0],
         }),
       });
 
@@ -34,11 +36,11 @@ function RecommendBlock({ recommendations, loading, username }) {
   };
 
   const handlePrev = () => {
-    setCurrent((prev) => (prev === 0 ? recommendations.length - 1 : prev - 1));
+    setCurrent((prev) => (prev === 0 ? total - 1 : prev - 1));
   };
 
   const handleNext = () => {
-    setCurrent((prev) => (prev === recommendations.length - 1 ? 0 : prev + 1));
+    setCurrent((prev) => (prev === total - 1 ? 0 : prev + 1));
   };
 
   if (loading) {
@@ -49,14 +51,66 @@ function RecommendBlock({ recommendations, loading, username }) {
     );
   }
 
-  if (!recommendations || recommendations.length === 0) {
-    return;
+  if (!recommendations || recommendations.length === 0) return null;
+
+  // === 单部电影特例 ===
+  if (total === 1) {
+    const movie = recommendations[0];
+    return (
+      <div className="w-full max-w-4xl mx-auto mt-12 relative">
+        <div className="flex justify-center items-center h-60">
+          <div
+            className="w-80 h-52 scale-110 rounded-xl overflow-hidden shadow-lg cursor-pointer"
+            style={{
+              backgroundImage: "url('/card.jpg')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              padding: "10px",
+            }}
+            onClick={() => onCardClick && onCardClick(movie)}
+          >
+            <img
+              src={movie.backdrop}
+              alt={movie.title}
+              className="w-full h-full object-cover rounded"
+            />
+          </div>
+        </div>
+
+        {/* Detail */}
+        <div className="bg-white/90 text-black mt-8 rounded-xl shadow-md px-6 py-5 max-w-3xl mx-auto text-center min-h-[240px]">
+          <h3 className="text-xl font-bold mb-2">{movie.title}</h3>
+          <p className="text-yellow-600 font-semibold mb-2">
+            ⭐ {movie.tmdb_rating ?? "N/A"}
+          </p>
+          <p className="text-sm mb-4">{movie.description}</p>
+          <div className="flex justify-center gap-3">
+            <button
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+              onClick={() => handleAdd(movie, "watched")}
+            >
+              Watched
+            </button>
+            <button
+              className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded"
+              onClick={() => handleAdd(movie, "waiting")}
+            >
+              Watchlist
+            </button>
+          </div>
+          {feedback && (
+            <p className="text-sm mt-4 text-green-600 font-medium">
+              {feedback}
+            </p>
+          )}
+        </div>
+      </div>
+    );
   }
 
-  const total = recommendations.length;
+  // === 多电影正常三卡视图 ===
   const prevIndex = (current - 1 + total) % total;
   const nextIndex = (current + 1) % total;
-
   const visibleMovies = [
     recommendations[prevIndex],
     recommendations[current],
@@ -67,7 +121,6 @@ function RecommendBlock({ recommendations, loading, username }) {
     <div className="w-full max-w-6xl mx-auto mt-12 relative">
       {/* Carousel */}
       <div className="flex justify-center items-center gap-6 relative h-60">
-        {/* Arrows */}
         <button
           onClick={handlePrev}
           className="absolute left-0 top-1/2 -translate-y-1/2 z-10 text-2xl text-white bg-black bg-opacity-30 hover:bg-opacity-50 rounded-full px-3 py-1"
@@ -81,27 +134,34 @@ function RecommendBlock({ recommendations, loading, username }) {
           →
         </button>
 
-        {visibleMovies.map((movie, idx) => (
-          <div
-            key={movie.title + idx}
-            className={`transition-all duration-300 flex-shrink-0 rounded-xl overflow-hidden shadow-md cursor-pointer ${
-              idx === 1 ? "w-80 h-52 scale-110 z-10" : "w-40 h-28 opacity-50"
-            }`}
-            style={{
-              backgroundImage: "url('/card.jpg')",
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              padding: idx === 1 ? "10px" : "4px",
-            }}
-            onClick={() => setCurrent((current + idx - 1 + total) % total)}
-          >
-            <img
-              src={movie.backdrop}
-              alt={movie.title}
-              className="w-full h-full object-cover rounded"
-            />
-          </div>
-        ))}
+        {visibleMovies.map((movie, idx) => {
+          const isCenter = idx === 1;
+          return (
+            <div
+              key={movie.title + idx}
+              className={`transition-all duration-300 flex-shrink-0 rounded-xl overflow-hidden shadow-md cursor-pointer ${
+                isCenter ? "w-80 h-52 scale-110 z-10" : "w-40 h-28 opacity-50"
+              }`}
+              style={{
+                backgroundImage: "url('/card.jpg')",
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                padding: isCenter ? "10px" : "4px",
+              }}
+              onClick={() =>
+                isCenter
+                  ? onCardClick?.(movie)
+                  : setCurrent((current + idx - 1 + total) % total)
+              }
+            >
+              <img
+                src={movie.backdrop}
+                alt={movie.title}
+                className="w-full h-full object-cover rounded"
+              />
+            </div>
+          );
+        })}
       </div>
 
       {/* Detail Block */}

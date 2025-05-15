@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import RecommendBlock from "../components/RecommendBlock";
 import HeaderBar from "../components/HeaderBar";
-
+import MovieModal from "../components/MovieModal";
+import { motion } from "framer-motion";
 function MainPage() {
   const [username, setUsername] = useState("");
   const [mode, setMode] = useState("mood");
@@ -11,6 +12,7 @@ function MainPage() {
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
+  const [selectedMovie, setSelectedMovie] = useState(null);
   const [selectedSuggestion, setSelectedSuggestion] = useState(null);
   const debounceRef = useRef(null);
   const navigate = useNavigate();
@@ -119,16 +121,33 @@ function MainPage() {
       />
 
       <div className="z-10 text-center px-4 mt-10">
-        <h1 className="text-4xl font-bold mb-2 drop-shadow-md">
+        <motion.h1
+          key={mode}
+          className="text-4xl font-extrabold mb-2 tracking-wide drop-shadow-md text-transparent bg-clip-text"
+          style={{
+            backgroundImage:
+              "linear-gradient(90deg, #ffffff, #d1d5db, #ffffff)",
+          }}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1.4, delay: 0 }}
+        >
           {mode === "mood"
             ? "Your mood. Your movie."
             : "Looking for something?"}
-        </h1>
-        <p className="text-white text-opacity-60 text-lg mb-8">
+        </motion.h1>
+
+        <motion.p
+          key={mode + "-p"}
+          className="text-white text-opacity-70 text-lg mb-8"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.2, delay: 0.6 }}
+        >
           {mode === "mood"
             ? "Discover a film that fits your mood."
-            : "Search directly for the film you have in mind."}
-        </p>
+            : "Search any film you have in mind."}
+        </motion.p>
       </div>
 
       <form
@@ -234,8 +253,16 @@ function MainPage() {
           recommendations={recommendations}
           loading={loading}
           username={username}
+          onCardClick={setSelectedMovie}
         />
       </div>
+      {selectedMovie && typeof selectedMovie === "object" && (
+        <MovieModal
+          movie={selectedMovie}
+          onClose={() => setSelectedMovie(null)}
+          readOnly={true}
+        />
+      )}
     </div>
   );
 }

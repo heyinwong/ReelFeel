@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-
 const moodOptions = [
   { emoji: "😭", tag: "Moved" },
   { emoji: "😂", tag: "Hilarious" },
@@ -14,7 +13,14 @@ const moodOptions = [
   { emoji: "✨", tag: "Beautiful" },
 ];
 
-function MovieModal({ movie, onClose, onRate, onLike, onReview }) {
+function MovieModal({
+  movie,
+  onClose,
+  onRate,
+  onLike,
+  onReview,
+  readOnly = false,
+}) {
   const [isFlipped, setIsFlipped] = useState(false);
   const [hoveredRating, setHoveredRating] = useState(null);
   const [localRating, setLocalRating] = useState(movie?.user_rating || 0);
@@ -143,110 +149,114 @@ function MovieModal({ movie, onClose, onRate, onLike, onReview }) {
               <p className="text-sm text-gray-700">
                 {movie.description || "No description available."}
               </p>
-              <div className="card-actions justify-end mt-4">
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={() => setIsFlipped(true)}
-                >
-                  Write your thoughts →
-                </button>
-              </div>
+              {!readOnly && (
+                <div className="card-actions justify-end mt-4">
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={() => setIsFlipped(true)}
+                  >
+                    Write your thoughts →
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Back (Review Page) */}
-          <div className="absolute inset-0 bg-white p-6 rounded-xl shadow-lg [backface-visibility:hidden] [transform:rotateY(180deg)]">
-            <h3 className="text-xl font-semibold mb-4 text-center">
-              Your Review
-            </h3>
+          {!readOnly && (
+            <div className="absolute inset-0 bg-white p-6 rounded-xl shadow-lg [backface-visibility:hidden] [transform:rotateY(180deg)]">
+              <h3 className="text-xl font-semibold mb-4 text-center">
+                Your Review
+              </h3>
 
-            {/* Moods */}
-            <div className="flex flex-wrap gap-2 justify-center mb-4">
-              {moodOptions.map(({ emoji, tag }) => (
-                <button
-                  key={tag}
-                  onClick={() => toggleMood(tag)}
-                  className={`px-3 py-1 rounded-full border text-sm transition ${
-                    selectedMoods.includes(tag)
-                      ? "bg-blue-100 border-blue-300 text-blue-800"
-                      : "bg-gray-100 border-gray-300 text-gray-700"
-                  }`}
-                >
-                  {emoji} {tag}
-                </button>
-              ))}
-            </div>
+              {/* Moods */}
+              <div className="flex flex-wrap gap-2 justify-center mb-4">
+                {moodOptions.map(({ emoji, tag }) => (
+                  <button
+                    key={tag}
+                    onClick={() => toggleMood(tag)}
+                    className={`px-3 py-1 rounded-full border text-sm transition ${
+                      selectedMoods.includes(tag)
+                        ? "bg-blue-100 border-blue-300 text-blue-800"
+                        : "bg-gray-100 border-gray-300 text-gray-700"
+                    }`}
+                  >
+                    {emoji} {tag}
+                  </button>
+                ))}
+              </div>
 
-            {/* Watch Date */}
-            <div className="mb-4">
-              <label className="block text-sm mb-1 text-gray-700 font-medium">
-                Watched on:
-              </label>
-              <input
-                type="date"
-                value={watchDate}
-                onChange={(e) => setWatchDate(e.target.value)}
-                className="border rounded p-2 w-full text-sm"
+              {/* Watch Date */}
+              <div className="mb-4">
+                <label className="block text-sm mb-1 text-gray-700 font-medium">
+                  Watched on:
+                </label>
+                <input
+                  type="date"
+                  value={watchDate}
+                  onChange={(e) => setWatchDate(e.target.value)}
+                  className="border rounded p-2 w-full text-sm"
+                />
+              </div>
+
+              {/* Review */}
+              <textarea
+                className="w-full h-40 border rounded p-2 text-sm mb-4"
+                value={review}
+                onChange={(e) => setReview(e.target.value)}
+                placeholder="Write what you felt..."
               />
-            </div>
 
-            {/* Review */}
-            <textarea
-              className="w-full h-40 border rounded p-2 text-sm mb-4"
-              value={review}
-              onChange={(e) => setReview(e.target.value)}
-              placeholder="Write what you felt..."
-            />
-
-            {/* Rating + Like */}
-            <div className="flex gap-3 items-center justify-center mb-4">
-              {renderStars()}
-              <button
-                className={`btn btn-sm ${
-                  localLiked ? "btn-error" : "btn-outline"
-                }`}
-                onClick={handleLike}
-              >
-                {localLiked ? "♥ Liked" : "♡ Like"}
-              </button>
-            </div>
-
-            {/* Feedback */}
-            {saveFeedback && (
-              <p className="text-sm text-green-600 font-medium text-center mb-2">
-                {saveFeedback}
-              </p>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex justify-end gap-3">
-              {!isFromWaiting && (
+              {/* Rating + Like */}
+              <div className="flex gap-3 items-center justify-center mb-4">
+                {renderStars()}
                 <button
-                  className="btn btn-sm btn-error"
-                  onClick={() => {
-                    onReview?.({ ...movie, delete: true });
-                    onClose();
-                  }}
+                  className={`btn btn-sm ${
+                    localLiked ? "btn-error" : "btn-outline"
+                  }`}
+                  onClick={handleLike}
                 >
-                  Delete
+                  {localLiked ? "♥ Liked" : "♡ Like"}
                 </button>
+              </div>
+
+              {/* Feedback */}
+              {saveFeedback && (
+                <p className="text-sm text-green-600 font-medium text-center mb-2">
+                  {saveFeedback}
+                </p>
               )}
-              <button
-                className="btn btn-sm btn-primary"
-                onClick={handleReviewSave}
-              >
-                Save
-              </button>
-              {!isFromWaiting && (
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-3">
+                {!isFromWaiting && (
+                  <button
+                    className="btn btn-sm btn-error"
+                    onClick={() => {
+                      onReview?.({ ...movie, delete: true });
+                      onClose();
+                    }}
+                  >
+                    Delete
+                  </button>
+                )}
                 <button
-                  className="btn btn-sm"
-                  onClick={() => setIsFlipped(false)}
+                  className="btn btn-sm btn-primary"
+                  onClick={handleReviewSave}
                 >
-                  ← Back
+                  Save
                 </button>
-              )}
+                {!isFromWaiting && (
+                  <button
+                    className="btn btn-sm"
+                    onClick={() => setIsFlipped(false)}
+                  >
+                    ← Back
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </motion.div>
       </div>
     </div>
