@@ -1,6 +1,9 @@
 from fastapi import FastAPI, HTTPException, Body, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from auth import get_current_user
+from models import User
+from fastapi import Depends
 import openai
 import os
 import json
@@ -11,9 +14,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 import httpx
 from fastapi.responses import JSONResponse
-
+from auth import router as auth_router
 from database import (
     async_session,
+    init_db,
+    get_db,
     get_watched_movies,
     get_waiting_movies,
     add_to_watched,
@@ -26,6 +31,8 @@ from models import WatchedMovie, WaitingMovie
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 app = FastAPI()
+
+app.include_router(auth_router)
 
 # Allow CORS
 app.add_middleware(
@@ -41,7 +48,6 @@ class MoodInput(BaseModel):
     mood: str
 
 class AddMovieInput(BaseModel):
-    username: str
     title: str
     poster: str
     backdrop: str
@@ -105,78 +111,91 @@ async def recommend_movies(data: MoodInput):
 
 
 @app.get("/watched-list")
-async def get_watched(username: str):
-    return {"movies": await get_watched_movies(username)}
+async def get_watched(user: User = Depends(get_current_user)):
+    return {"movies": await get_watched_movies(user.id)}
 
 @app.get("/waiting-list")
-async def get_waiting(username: str):
-    return {"movies": await get_waiting_movies(username)}
+async def get_waiting(user: User = Depends(get_current_user)):
+    return {"movies": await get_waiting_movies(user.id)}
 
 @app.post("/watched")
-async def add_watched(movie: AddMovieInput):
+async def add_watched(
+    movie: AddMovieInput,
+    user: User = Depends(get_current_user)
+):
+    movie_data = movie.model_dump()
+    movie_data["user_id"] = user.id  # 绑定当前登录用户
+
     async with async_session() as session:
-        await add_to_watched(session, movie.dict())
+        await add_to_watched(session, movie_data)
         await session.commit()
     return {"message": "Added to watched."}
 
 @app.post("/waiting")
-async def add_waiting(movie: AddMovieInput):
+async def add_waiting(movie: AddMovieInput, user: User = Depends(get_current_user)):
+    movie_data = movie.model_dump()
+    movie_data["user_id"] = user.id
+
     async with async_session() as session:
-        await add_to_waiting(session, movie.dict())
+        await add_to_waiting(session, movie_data)
         await session.commit()
     return {"message": "Added to waiting."}
 
 @app.delete("/watched/{title}")
-async def delete_watched(title: str, username: str):
+async def delete_watched(title: str, user: User = Depends(get_current_user)):
     async with async_session() as session:
         await session.execute(
             delete(WatchedMovie).where(
-                (WatchedMovie.username == username) & (WatchedMovie.title == title)
+                (WatchedMovie.user_id == user.id) & (WatchedMovie.title == title)
             )
         )
         await session.commit()
     return {"message": "Deleted from watched list"}
 
 @app.delete("/waiting/{title}")
-async def delete_waiting(title: str, username: str):
+async def delete_waiting(title: str, user: User = Depends(get_current_user)):
     async with async_session() as session:
         await session.execute(
             delete(WaitingMovie).where(
-                (WaitingMovie.username == username) & (WaitingMovie.title == title)
+                (WaitingMovie.user_id == user.id) & (WaitingMovie.title == title)
             )
         )
         await session.commit()
     return {"message": "Deleted from waiting list"}
 
 @app.post("/review")
-async def review_movie(payload: dict = Body(...)):
-    print("📥 Received review payload:", payload)
+async def review_movie(
+    payload: dict = Body(...),
+    user: User = Depends(get_current_user)
+):
+    print(" Received review payload:", payload)
 
     from_waiting = payload.pop("fromWaiting", False)
-    print("📌 fromWaiting popped:", from_waiting)
+    print(" fromWaiting popped:", from_waiting)
 
     async with async_session() as session:
         if from_waiting:
-            print("➡️ Entering move_to_watched()...")
+            print(" Entering move_to_watched()...")
             try:
+                payload["user_id"] = user.id  # 添加 user_id 给 move_to_watched 使用
                 await move_to_watched(session, payload)
-                print("✅ move_to_watched() completed")
+                print(" move_to_watched() completed")
                 await session.commit()
-                print("✅ session.commit() completed")
+                print(" session.commit() completed")
             except Exception as e:
-                print("❌ Error in from_waiting block:", e)
+                print(" Error in from_waiting block:", e)
                 raise
         else:
             try:
                 result = await session.execute(
                     select(WatchedMovie).where(
-                        (WatchedMovie.username == payload["username"]) &
+                        (WatchedMovie.user_id == user.id) &
                         (WatchedMovie.title == payload["title"])
                     )
                 )
                 movie = result.scalar_one_or_none()
                 if movie:
-                    print("✏️ Updating existing watched movie:", movie.title)
+                    print(" Updating existing watched movie:", movie.title)
                     movie.review = payload.get("review", movie.review)
                     moods = payload.get("moods", [])
                     movie.moods = ", ".join(moods) if isinstance(moods, list) else moods
@@ -186,12 +205,12 @@ async def review_movie(payload: dict = Body(...)):
                     movie.user_rating = payload.get("user_rating", movie.user_rating)
                     movie.liked = payload.get("liked", movie.liked)
                     await session.commit()
-                    print("✅ Updated and committed")
+                    print(" Updated and committed")
                 else:
-                    print("⚠️ Movie not found in watched list")
+                    print(" Movie not found in watched list")
                     raise HTTPException(status_code=404, detail="Movie not found in watched list")
             except Exception as e:
-                print("❌ Error in watched update block:", e)
+                print("Error in watched update block:", e)
                 raise
 
     return {"message": "Review saved."}
@@ -276,3 +295,7 @@ async def movie_by_title(title: str):
         return {"recommendations": [movie]}  
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@app.get("/me")
+async def read_me(user: User = Depends(get_current_user)):
+    return {"id": user.id, "username": user.username}
