@@ -1,30 +1,36 @@
-# An in-process mini project (Reel Feel), relates to use ai agent on movie recommendation based on mood.
+# ReelFeel: An AI-Powered Mood-Based Movie Recommender
 
-Potential functions to have:
+> A full-stack personal project exploring the use of LLM agents in mood-driven movie recommendations.
 
-- Obviously the ai recommendation
-- Log in system
-- watched list and rating/like,hate system
-- waiting list (to watch)
+## ✅ Current Features
 
-## to start
+- Mood-based movie recommendation (GPT + TMDB API)
+- User login and JWT authentication (FastAPI + bcrypt)
+- Watched list with rating, mood tagging, comment, and like/dislike
+- Waiting list (To-Watch movies)
+- Taste modeling system (GPT-based snapshot & persona summary)
+- Dashboard-ready APIs (`/taste-summary`, `/snapshot-history`)
 
-### backend（FastAPI）
+---
 
-1. (optional) start the virtual environment：
+## Getting Started
+
+### Backend (FastAPI)
+
+1. **(Optional) Set up virtual environment**:
 
    ```bash
-   python3 -m venv venv_reelfeel #you can name it whatever
+   python3 -m venv venv_reelfeel
    source venv_reelfeel/bin/activate  # macOS/Linux
    ```
 
-2. install dependencies：
+2. **Install dependencies**:
 
    ```bash
    pip install -r requirements.txt
    ```
 
-3. start local host（default http://localhost:8000）：
+3. **Start backend server** (default: http://localhost:8000):
 
    ```bash
    uvicorn main:app --reload
@@ -32,20 +38,41 @@ Potential functions to have:
 
 ---
 
-### frontend（React）
+### Frontend (React)
 
-1. start local host（default http://localhost:5173）：
+> _To be added soon — frontend under active development._
 
-   ```bash
-   npm run dev
-   ```
+To start dev server (if already set up):
+
+```bash
+npm install
+npm run dev
+```
 
 ---
 
-### api key and environmental variable
+## Environment Variables
 
-set API key as environmental variable like this：
+Create and export your API keys as environment variables before running the app:
 
 ```bash
-export GEMINI_API_KEY=your_api_key_here
+export OPENAI_API_KEY=your_openai_key
+export TMDB_API_KEY=your_tmdb_key
+export MOVIE_PASS_KEY=your_jwt_secret_key
+```
+
+---
+
+## Folder Structure (optional)
+
+```
+/backend
+  ├── main.py
+  ├── models.py
+  ├── auth.py
+  ├── database.py
+  └── base.py
+
+/frontend
+  └── ... (in progress)
 ```

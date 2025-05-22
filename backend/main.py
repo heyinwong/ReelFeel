@@ -25,7 +25,7 @@ from database import (
     add_to_waiting,
     move_to_watched,
 )
-from models import WatchedMovie, WaitingMovie
+from models import WatchedMovie, WaitingMovie, TasteSnapshot, TasteSummary
 
 # Set OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -118,6 +118,40 @@ async def get_watched(user: User = Depends(get_current_user)):
 async def get_waiting(user: User = Depends(get_current_user)):
     return {"movies": await get_waiting_movies(user.id)}
 
+@app.get("/taste-summary")
+async def get_taste_summary(user: User = Depends(get_current_user)):
+    async with async_session() as session:
+        result = await session.execute(
+            select(TasteSummary).where(TasteSummary.user_id == user.id)
+        )
+        summary = result.scalar_one_or_none()
+        if summary:
+            return {"summary": summary.summary}
+        else:
+            return {"summary": "No summary available yet."}
+
+@app.get("/snapshot-history")
+async def get_snapshot_history(user: User = Depends(get_current_user)):
+    async with async_session() as session:
+        result = await session.execute(
+            select(TasteSnapshot)
+            .where(TasteSnapshot.user_id == user.id)
+            .order_by(TasteSnapshot.timestamp.desc())
+        )
+        snapshots = result.scalars().all()
+        return {
+            "snapshots": [
+                {
+                    "movie_id": s.movie_id,
+                    "timestamp": s.timestamp.isoformat() if s.timestamp else None,
+                    "mood": s.mood_tag,
+                    "comment": s.gpt_comment
+                }
+                for s in snapshots
+            ]
+        }
+
+
 @app.post("/watched")
 async def add_watched(
     movie: AddMovieInput,
@@ -177,14 +211,29 @@ async def review_movie(
         if from_waiting:
             print(" Entering move_to_watched()...")
             try:
-                payload["user_id"] = user.id  # 添加 user_id 给 move_to_watched 使用
+                payload["user_id"] = user.id  # 提供给 move_to_watched 使用
                 await move_to_watched(session, payload)
-                print(" move_to_watched() completed")
                 await session.commit()
-                print(" session.commit() completed")
+                print(" move_to_watched() committed")
+
+                # 🔄 再查一次刚添加的 watched movie（供 AI 使用）
+                result = await session.execute(
+                    select(WatchedMovie).where(
+                        (WatchedMovie.user_id == user.id) &
+                        (WatchedMovie.title == payload["title"])
+                    )
+                )
+                movie = result.scalar_one_or_none()
+                if not movie:
+                    raise HTTPException(status_code=500, detail="Movie moved but not found")
+
+                # ✨ AI 处理 snapshot + summary
+                await process_taste_modeling(session, user, movie)
+
             except Exception as e:
                 print(" Error in from_waiting block:", e)
                 raise
+
         else:
             try:
                 result = await session.execute(
@@ -206,6 +255,10 @@ async def review_movie(
                     movie.liked = payload.get("liked", movie.liked)
                     await session.commit()
                     print(" Updated and committed")
+
+                    # ✨ AI 处理 snapshot + summary
+                    await process_taste_modeling(session, user, movie)
+
                 else:
                     print(" Movie not found in watched list")
                     raise HTTPException(status_code=404, detail="Movie not found in watched list")
@@ -214,6 +267,28 @@ async def review_movie(
                 raise
 
     return {"message": "Review saved."}
+async def process_taste_modeling(session, user, movie):
+    try:
+        snapshot_comment = await generate_snapshot_comment(
+            movie_title=movie.title,
+            user_rating=movie.user_rating,
+            review=movie.review,
+            mood_tags=movie.moods
+        )
+
+        snapshot = TasteSnapshot(
+            user_id=user.id,
+            movie_id=movie.id,
+            action_type="review",
+            mood_tag=movie.moods,
+            gpt_comment=snapshot_comment
+        )
+        session.add(snapshot)
+
+        await update_taste_summary(session, user.id, snapshot_comment)
+        await session.commit()
+    except Exception as e:
+        print("Snapshot/summary update failed:", e)
 
 @app.get("/search_suggestions")
 async def search_suggestions(query: str = Query(..., min_length=1)):
@@ -299,3 +374,73 @@ async def movie_by_title(title: str):
 @app.get("/me")
 async def read_me(user: User = Depends(get_current_user)):
     return {"id": user.id, "username": user.username}
+
+async def generate_snapshot_comment(movie_title, user_rating, review, mood_tags):
+    # 构造行为信息（逐条判断有没有内容）
+    segments = []
+
+    if user_rating:
+        segments.append(f"gave it a rating of {user_rating}")
+    if review:
+        segments.append(f"commented: \"{review}\"")
+    if mood_tags:
+        mood_str = ", ".join(mood_tags) if isinstance(mood_tags, list) else mood_tags
+        segments.append(f"tagged their mood as: {mood_str}")
+
+    if not segments:
+        segments_text = "watched the movie but gave no specific input"
+    else:
+        segments_text = "; ".join(segments)
+
+    # 最终 prompt
+    prompt = (
+        f"You are an AI assistant analyzing a user's taste based on their recent movie interaction.\n"
+        f"The user watched '{movie_title}' and {segments_text}.\n"
+        f"Write a short sentence (1–2 lines) from your point of view describing what this tells you about the user's taste or preference."
+    )
+
+    try:
+        response = openai.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        print("Error generating snapshot comment:", e)
+        return "The user's behavior is unclear, but it may still reflect a unique taste."
+    
+async def update_taste_summary(session: AsyncSession, user_id: int, new_snapshot_text: str):
+    from models import TasteSummary
+    from sqlalchemy import select
+
+    # 查询旧 summary
+    result = await session.execute(select(TasteSummary).where(TasteSummary.user_id == user_id))
+    record = result.scalar_one_or_none()
+    old_summary = record.summary if record else ""
+
+    prompt = (
+        "You are maintaining a user interest profile based on their movie-related behavior.\n"
+        f"Here is the current summary of the user:\n\"{old_summary}\"\n\n"
+        f"Here is a new observation:\n\"{new_snapshot_text}\"\n\n"
+        "Update the user profile by integrating this new observation. Keep it concise, neutral, and analytical. "
+        "Output only the updated summary."
+    )
+
+    try:
+        response = openai.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+        )
+        updated = response.choices[0].message.content.strip()
+
+        # 写入/更新 summary 表
+        if record:
+            record.summary = updated
+        else:
+            new_summary = TasteSummary(user_id=user_id, summary=updated)
+            session.add(new_summary)
+
+    except Exception as e:
+        print("Error updating taste summary:", e)
