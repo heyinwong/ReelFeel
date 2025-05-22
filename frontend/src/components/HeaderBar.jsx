@@ -1,9 +1,11 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import ReelButton from "./ReelButton";
+import useAuth from "../hooks/useAuth"; // ✅ 加这行
 
-function HeaderBar({ username, onLogout, className = "" }) {
+function HeaderBar({ className = "" }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, logout } = useAuth(); // ✅ 从 hook 中获取状态
 
   const getTagline = () => {
     switch (location.pathname) {
@@ -46,9 +48,12 @@ function HeaderBar({ username, onLogout, className = "" }) {
           <ReelButton size="lg" onClick={() => navigate("/waiting")}>
             🍿 Watchlist
           </ReelButton>
-          {username ? (
-            <ReelButton variant="ghost" size="lg" onClick={onLogout}>
-              Logout ({username})
+          <ReelButton onClick={() => navigate("/dashboard")}>
+            🧠 Dashboard
+          </ReelButton>
+          {user ? (
+            <ReelButton variant="ghost" size="lg" onClick={logout}>
+              Logout ({user.username})
             </ReelButton>
           ) : (
             <ReelButton

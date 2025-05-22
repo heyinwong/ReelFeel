@@ -1,28 +1,30 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import API from "../utils/api";
 
-function RecommendBlock({ recommendations, loading, username, onCardClick }) {
+function RecommendBlock({ recommendations, loading, user, onCardClick }) {
   const [current, setCurrent] = useState(0);
   const [feedback, setFeedback] = useState("");
+  const navigate = useNavigate();
 
   const total = recommendations.length;
 
   const handleAdd = async (movie, listType) => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+
     const endpoint = listType === "watched" ? "watched" : "waiting";
     try {
-      const response = await fetch(`http://localhost:8000/${endpoint}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...movie,
-          username,
-          watch_date: new Date().toISOString().split("T")[0],
-        }),
+      const response = await API.post(`/${endpoint}`, {
+        ...movie,
+        watch_date: new Date().toISOString().split("T")[0],
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.detail || "Failed to add");
+      if (response.status !== 200) {
+        throw new Error(response.data?.detail || "Failed to add");
+      }
 
       setFeedback(
         `✅ Added to ${listType === "watched" ? "Reel Log" : "Watchlist"}`
@@ -53,7 +55,6 @@ function RecommendBlock({ recommendations, loading, username, onCardClick }) {
 
   if (!recommendations || recommendations.length === 0) return null;
 
-  // === 单部电影特例 ===
   if (total === 1) {
     const movie = recommendations[0];
     return (
@@ -77,7 +78,6 @@ function RecommendBlock({ recommendations, loading, username, onCardClick }) {
           </div>
         </div>
 
-        {/* Detail */}
         <div className="bg-white/90 text-black mt-8 rounded-xl shadow-md px-6 py-5 max-w-3xl mx-auto text-center min-h-[240px]">
           <h3 className="text-xl font-bold mb-2">{movie.title}</h3>
           <p className="text-yellow-600 font-semibold mb-2">
@@ -108,7 +108,6 @@ function RecommendBlock({ recommendations, loading, username, onCardClick }) {
     );
   }
 
-  // === 多电影正常三卡视图 ===
   const prevIndex = (current - 1 + total) % total;
   const nextIndex = (current + 1) % total;
   const visibleMovies = [
@@ -119,7 +118,6 @@ function RecommendBlock({ recommendations, loading, username, onCardClick }) {
 
   return (
     <div className="w-full max-w-6xl mx-auto mt-12 relative">
-      {/* Carousel */}
       <div className="flex justify-center items-center gap-6 relative h-60">
         <button
           onClick={handlePrev}
@@ -164,7 +162,6 @@ function RecommendBlock({ recommendations, loading, username, onCardClick }) {
         })}
       </div>
 
-      {/* Detail Block */}
       <div className="bg-white/90 text-black mt-8 rounded-xl shadow-md px-6 py-5 max-w-3xl mx-auto text-center min-h-[240px]">
         <h3 className="text-xl font-bold mb-2">
           {recommendations[current].title}

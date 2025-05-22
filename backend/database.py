@@ -132,7 +132,6 @@ async def move_to_watched(session: AsyncSession, movie_data: dict):
 # ---------- Dependency ----------
 from contextlib import asynccontextmanager
 
-@asynccontextmanager
-async def get_db():
+async def get_db() -> AsyncSession:
     async with async_session() as session:
         yield session

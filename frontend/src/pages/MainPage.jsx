@@ -4,8 +4,11 @@ import RecommendBlock from "../components/RecommendBlock";
 import HeaderBar from "../components/HeaderBar";
 import MovieModal from "../components/MovieModal";
 import { motion } from "framer-motion";
+import useAuth from "../hooks/useAuth";
+import API from "../utils/api";
+
 function MainPage() {
-  const [username, setUsername] = useState("");
+  const { user, isLoading } = useAuth();
   const [mode, setMode] = useState("mood");
   const [input, setInput] = useState("");
   const [submittedMood, setSubmittedMood] = useState("");
@@ -16,11 +19,6 @@ function MainPage() {
   const [selectedSuggestion, setSelectedSuggestion] = useState(null);
   const debounceRef = useRef(null);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const name = localStorage.getItem("username");
-    if (name) setUsername(name);
-  }, []);
 
   const handleInputChange = (e) => {
     const value = e.target.value;
@@ -43,12 +41,10 @@ function MainPage() {
 
   const fetchSuggestions = async (query) => {
     try {
-      const res = await fetch(
-        `http://localhost:8000/search_suggestions?query=${encodeURIComponent(
-          query
-        )}`
-      );
-      const data = await res.json();
+      const res = await API.get("/search_suggestions", {
+        params: { query },
+      });
+      const data = res.data;
       setSuggestions(data.suggestions || []);
     } catch (err) {
       console.error("Failed to fetch suggestions", err);
@@ -64,18 +60,9 @@ function MainPage() {
     setLoading(true);
 
     try {
-      const endpoint =
-        mode === "search"
-          ? "http://localhost:8000/search"
-          : "http://localhost:8000/recommend";
-
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mood: input }),
-      });
-
-      const data = await response.json();
+      const endpoint = mode === "search" ? "/search" : "/recommend";
+      const response = await API.post(endpoint, { mood: input });
+      const data = response.data;
       const raw = data.recommendations || [];
 
       const normalized = raw.map((movie) => ({
@@ -96,13 +83,6 @@ function MainPage() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("username");
-    setUsername("");
-    setSubmittedMood("");
-    navigate("/");
-  };
-
   return (
     <div
       className="relative min-h-screen w-full text-white flex flex-col items-center justify-center pt-20"
@@ -114,11 +94,7 @@ function MainPage() {
         backgroundColor: "#000000",
       }}
     >
-      <HeaderBar
-        username={username}
-        onLogout={handleLogout}
-        className="fixed top-0 left-0 w-full z-50"
-      />
+      <HeaderBar className="fixed top-0 left-0 w-full z-50" />
 
       <div className="z-10 text-center px-4 mt-10">
         <motion.h1
@@ -207,14 +183,11 @@ function MainPage() {
                   setSelectedSuggestion(movie);
                   setSuggestions([]);
                   setInput(movie.title);
-
                   try {
-                    const res = await fetch(
-                      `http://localhost:8000/movie_by_title?title=${encodeURIComponent(
-                        movie.title
-                      )}`
-                    );
-                    const data = await res.json();
+                    const res = await API.get("/movie_by_title", {
+                      params: { title: movie.title },
+                    });
+                    const data = res.data;
                     const result = data.recommendations || [];
 
                     const normalized = result.map((movie) => ({
@@ -252,10 +225,11 @@ function MainPage() {
           mood={submittedMood}
           recommendations={recommendations}
           loading={loading}
-          username={username}
+          user={user}
           onCardClick={setSelectedMovie}
         />
       </div>
+
       {selectedMovie && typeof selectedMovie === "object" && (
         <MovieModal
           movie={selectedMovie}

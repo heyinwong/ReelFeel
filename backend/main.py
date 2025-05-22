@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, Body, Query
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 from pydantic import BaseModel
 from auth import get_current_user
 from models import User
@@ -30,7 +31,15 @@ from models import WatchedMovie, WaitingMovie, TasteSnapshot, TasteSummary
 # Set OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("🌱 Initializing DB...")
+    await init_db()
+    print("✅ DB Ready.")
+    yield
+    print("🧹 Cleanup if needed.")
+
+app = FastAPI(lifespan=lifespan)
 
 app.include_router(auth_router)
 

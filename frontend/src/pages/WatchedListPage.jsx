@@ -3,30 +3,27 @@ import { useNavigate } from "react-router-dom";
 import HeaderBar from "../components/HeaderBar";
 import MovieCard from "../components/MovieCard";
 import MovieModal from "../components/MovieModal";
+import useAuth from "../hooks/useAuth";
+import API from "../utils/api";
 
 function WatchedListPage() {
+  const { user, isLoading } = useAuth();
   const [movies, setMovies] = useState([]);
-  const [username, setUsername] = useState("");
   const [selectedMovie, setSelectedMovie] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const name = localStorage.getItem("username");
-    if (!name) {
+    if (!isLoading && !user) {
       navigate("/login");
-    } else {
-      setUsername(name);
-      fetchMovies(name);
+    } else if (user) {
+      fetchMovies();
     }
-  }, [navigate]);
+  }, [user, isLoading, navigate]);
 
-  const fetchMovies = async (user) => {
+  const fetchMovies = async () => {
     try {
-      const res = await fetch(
-        `http://localhost:8000/watched-list?username=${user}`
-      );
-      const data = await res.json();
-      setMovies(data.movies || []);
+      const res = await API.get("/watched-list");
+      setMovies(res.data.movies || []);
     } catch (err) {
       console.error("Error fetching watched list:", err);
     }
@@ -34,24 +31,16 @@ function WatchedListPage() {
 
   const handleDelete = async (movie) => {
     try {
-      const res = await fetch(
-        `http://localhost:8000/watched/${encodeURIComponent(
-          movie.title
-        )}?username=${username}`,
-        { method: "DELETE" }
-      );
-      if (res.ok) {
+      const res = await API.delete(`/watched/${encodeURIComponent(movie.title)}`);
+      if (res.status === 200) {
         setMovies((prev) => prev.filter((m) => m.title !== movie.title));
       } else {
-        console.error("Failed to delete:", await res.text());
+        console.error("Failed to delete:", res);
       }
     } catch (err) {
       console.error("Error deleting movie:", err);
     }
   };
-
-  // 删除 handleRate 和 handleLike
-  // 替换 handleReview 为：
 
   const handleReview = async (movie) => {
     if (movie.delete) {
@@ -60,21 +49,16 @@ function WatchedListPage() {
     }
 
     try {
-      const res = await fetch("http://localhost:8000/review", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username,
-          title: movie.title,
-          user_rating: movie.user_rating,
-          liked: movie.liked,
-          review: movie.review,
-          moods: movie.moods,
-          watch_date: movie.watch_date,
-        }),
+      const res = await API.post("/review", {
+        title: movie.title,
+        user_rating: movie.user_rating,
+        liked: movie.liked,
+        review: movie.review,
+        moods: movie.moods,
+        watch_date: movie.watch_date,
       });
 
-      if (res.ok) {
+      if (res.status === 200) {
         setMovies((prev) =>
           prev.map((m) => (m.title === movie.title ? { ...m, ...movie } : m))
         );
@@ -82,12 +66,6 @@ function WatchedListPage() {
     } catch (err) {
       console.error("Error saving review:", err);
     }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("username");
-    setUsername("");
-    navigate("/");
   };
 
   return (
@@ -98,7 +76,7 @@ function WatchedListPage() {
         backgroundAttachment: "fixed",
       }}
     >
-      <HeaderBar username={username} onLogout={handleLogout} />
+      <HeaderBar />
       <div className="px-6 py-8 max-w-screen-xl mx-auto">
         {movies.length === 0 ? (
           <p className="text-gray-100">Your watched list is empty.</p>
