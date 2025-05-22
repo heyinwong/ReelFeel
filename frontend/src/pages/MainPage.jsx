@@ -99,29 +99,28 @@ function MainPage() {
       <div className="z-10 text-center px-4 mt-10">
         <motion.h1
           key={mode}
-          className="text-4xl font-extrabold mb-2 tracking-wide drop-shadow-md text-transparent bg-clip-text"
-          style={{
-            backgroundImage:
-              "linear-gradient(90deg, #ffffff, #d1d5db, #ffffff)",
-          }}
+          className="text-4xl font-extrabold mb-2 tracking-wide text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)]"
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1.4, delay: 0 }}
         >
           {mode === "mood"
-            ? "Your mood. Your movie."
+            ? "Your taste, your reel."
             : "Looking for something?"}
         </motion.h1>
 
         <motion.p
           key={mode + "-p"}
-          className="text-white text-opacity-70 text-lg mb-8"
+          className="text-white text-lg mb-8"
+          style={{
+            textShadow: "0 2px 4px rgba(0, 0, 0, 0.7)",
+          }}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.2, delay: 0.6 }}
         >
           {mode === "mood"
-            ? "Discover a film that fits your mood."
+            ? "An AI-crafted film pick that suits your taste."
             : "Search any film you have in mind."}
         </motion.p>
       </div>
@@ -144,12 +143,12 @@ function MainPage() {
               }}
               className="w-[130px] h-[48px] border border-white/30 bg-white/10 text-white rounded-md text-base font-medium hover:bg-white/20 transition cursor-pointer"
             >
-              {mode === "mood" ? "Mood" : "Search"}
+              {mode === "mood" ? "Roll the Reel" : "Search"}
             </button>
             <div className="absolute left-0 bottom-full mb-1 px-2 py-1 bg-black/80 text-xs text-white rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap">
               {mode === "mood"
                 ? "Switch to search by title"
-                : "Switch to mood-based recommendation"}
+                : "Switch to AI recommendation"}
             </div>
           </div>
 

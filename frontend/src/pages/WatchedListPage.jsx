@@ -31,7 +31,9 @@ function WatchedListPage() {
 
   const handleDelete = async (movie) => {
     try {
-      const res = await API.delete(`/watched/${encodeURIComponent(movie.title)}`);
+      const res = await API.delete(
+        `/watched/${encodeURIComponent(movie.title)}`
+      );
       if (res.status === 200) {
         setMovies((prev) => prev.filter((m) => m.title !== movie.title));
       } else {
@@ -69,34 +71,44 @@ function WatchedListPage() {
   };
 
   return (
-    <div
-      className="min-h-screen bg-cover bg-center w-full"
-      style={{
-        backgroundImage: "url('/reel_wall.jpg')",
-        backgroundAttachment: "fixed",
-      }}
-    >
-      <HeaderBar />
-      <div className="px-6 py-8 max-w-screen-xl mx-auto">
-        {movies.length === 0 ? (
-          <p className="text-gray-100">Your watched list is empty.</p>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-            {movies.map((movie) => (
-              <MovieCard
-                key={movie.title}
-                movie={{ ...movie, mode: "watched" }}
-                onClick={setSelectedMovie}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-      <MovieModal
-        movie={selectedMovie}
-        onClose={() => setSelectedMovie(null)}
-        onReview={handleReview}
+    <div className="relative min-h-screen w-full overflow-x-hidden">
+      {/* 背景图 + 遮罩 */}
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: "url('/reel_wall.jpg')" }}
       />
+      {/* 背景上的遮罩效果（顶部压暗，底部轻光） */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        {/* 顶部暗角（增加聚焦感） */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent" />
+
+        {/* 整体柔光混合（提升内容清晰度） */}
+        <div className="absolute inset-0 bg-white/10 mix-blend-overlay" />
+      </div>
+      {/* 主内容区 */}
+      <div className="relative z-10">
+        <HeaderBar />
+        <div className="px-6 py-8 max-w-screen-xl mx-auto">
+          {movies.length === 0 ? (
+            <p className="text-gray-100">Your watched list is empty.</p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+              {movies.map((movie) => (
+                <MovieCard
+                  key={movie.title}
+                  movie={{ ...movie, mode: "watched" }}
+                  onClick={setSelectedMovie}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+        <MovieModal
+          movie={selectedMovie}
+          onClose={() => setSelectedMovie(null)}
+          onReview={handleReview}
+        />
+      </div>
     </div>
   );
 }
