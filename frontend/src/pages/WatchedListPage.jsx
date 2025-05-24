@@ -107,6 +107,7 @@ function WatchedListPage() {
           movie={selectedMovie}
           onClose={() => setSelectedMovie(null)}
           onReview={handleReview}
+          onDelete={handleDelete} // ✅ 加上这个！
         />
       </div>
     </div>

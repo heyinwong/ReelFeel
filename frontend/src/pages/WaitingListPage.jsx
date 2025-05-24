@@ -47,6 +47,13 @@ function WaitingListPage() {
   };
 
   const handleReview = async (movie) => {
+    // ✅ 新增逻辑：如果是“删除”，就直接调用 handleDelete
+    if (movie.delete) {
+      await handleDelete(movie);
+      return;
+    }
+
+    // ✅ 原有逻辑：判断是否为从 waiting list 转移到 watched
     const hasReviewData =
       movie.user_rating > 0 ||
       movie.liked ||
@@ -59,7 +66,7 @@ function WaitingListPage() {
           ...movie,
           fromWaiting: true,
         });
-        await handleDelete(movie); // Remove from frontend
+        await handleDelete(movie);
         toast.success("Moved to Watched");
       } catch (err) {
         console.error("❌ Failed to move movie to watched:", err);
@@ -79,20 +86,14 @@ function WaitingListPage() {
           filter: "hue-rotate(150deg) brightness(0.9) saturate(0.9)",
         }}
       />
-      {/* 背景上的遮罩效果（顶部压暗，底部轻光） */}
       <div className="absolute inset-0 z-0 pointer-events-none">
-        {/* 顶部暗角（增加聚焦感） */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent" />
-
-        {/* 整体柔光混合（提升内容清晰度） */}
         <div className="absolute inset-0 bg-white/10 mix-blend-overlay" />
       </div>
 
-      {/* 前景内容 */}
       <div className="relative z-10 text-white">
         <HeaderBar />
         <div className="px-6 py-8 max-w-screen-xl mx-auto">
-          <h1 className="text-3xl font-bold mb-6">Watchlist</h1>
           {movies.length === 0 ? (
             <p className="text-gray-200">Your watchlist is empty.</p>
           ) : (
@@ -113,6 +114,7 @@ function WaitingListPage() {
         movie={selectedMovie}
         onClose={() => setSelectedMovie(null)}
         onReview={handleReview}
+        onDelete={handleDelete} // ✅ 加上这个！
       />
     </div>
   );

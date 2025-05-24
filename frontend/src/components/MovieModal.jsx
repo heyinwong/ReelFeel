@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+
 const moodOptions = [
   { emoji: "😭", tag: "Moved" },
   { emoji: "😂", tag: "Hilarious" },
@@ -19,6 +20,7 @@ function MovieModal({
   onRate,
   onLike,
   onReview,
+  onDelete,
   readOnly = false,
 }) {
   const [isFlipped, setIsFlipped] = useState(false);
@@ -220,7 +222,6 @@ function MovieModal({
                 </button>
               </div>
 
-              {/* Feedback */}
               {saveFeedback && (
                 <p className="text-sm text-green-600 font-medium text-center mb-2">
                   {saveFeedback}
@@ -229,11 +230,11 @@ function MovieModal({
 
               {/* Action Buttons */}
               <div className="flex justify-end gap-3">
-                {!isFromWaiting && (
+                {onDelete && (
                   <button
                     className="btn btn-sm btn-error"
                     onClick={() => {
-                      onReview?.({ ...movie, delete: true });
+                      onDelete(movie);
                       onClose();
                     }}
                   >
