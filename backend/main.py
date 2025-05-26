@@ -63,6 +63,8 @@ class AddMovieInput(BaseModel):
     tmdb_rating: float | None = None
     description: str
 
+class UpdateSummaryInput(BaseModel):
+    feedback: str
 # ---------- TMDB Movie Info Helper ----------
 async def fetch_movie_info(title: str):
     api_key = os.getenv("TMDB_API_KEY")
@@ -441,21 +443,18 @@ async def generate_snapshot_comment(movie_title, user_rating, review, mood_tags)
     except Exception as e:
         print("Error generating snapshot comment:", e)
         return "Your behavior is unclear, but it may still reflect a unique taste."
-
-
 async def update_taste_summary(session: AsyncSession, user_id: int, new_snapshot_text: str):
-    from models import TasteSummary
-    from sqlalchemy import select
-
-    result = await session.execute(select(TasteSummary).where(TasteSummary.user_id == user_id))
+    result = await session.execute(
+        select(TasteSummary).where(TasteSummary.user_id == user_id)
+    )
     record = result.scalar_one_or_none()
     old_summary = record.summary if record else ""
 
     prompt = (
         "You are maintaining a user interest profile and speaking directly to the user.\n"
         f"Here is the current AI understanding of your taste:\n\"{old_summary}\"\n\n"
-        f"Here is a new observation about you:\n\"{new_snapshot_text}\"\n\n"
-        "Update your profile using 'you' instead of 'the user'. Be concise, neutral, and insightful. Output only the updated summary."
+        f"Here is a new observation:\n\"{new_snapshot_text}\"\n\n"
+        "Update your profile using 'you'. Be concise, neutral, and insightful. Output only the updated summary."
     )
 
     try:
@@ -474,8 +473,7 @@ async def update_taste_summary(session: AsyncSession, user_id: int, new_snapshot
 
     except Exception as e:
         print("Error updating taste summary:", e)
-
-
+        
 async def regenerate_taste_summary(session: AsyncSession, user_id: int):
     result = await session.execute(
         select(TasteSnapshot)
@@ -486,10 +484,16 @@ async def regenerate_taste_summary(session: AsyncSession, user_id: int):
 
     updated_summary = ""
     for snap in snapshots:
+        # ✅ 针对 correction 类型，加上说明
+        if snap.action_type == "correction":
+            insight = f'The user explicitly stated: "{snap.gpt_comment}"'
+        else:
+            insight = snap.gpt_comment
+
         prompt = (
             "You are maintaining a user interest profile and speaking directly to the user.\n"
             f"Here is the current AI understanding of your taste:\n\"{updated_summary}\"\n\n"
-            f"Here is a new insight about you:\n\"{snap.gpt_comment}\"\n\n"
+            f"Here is a new insight about you:\n\"{insight}\"\n\n"
             "Update your profile using 'you'. Be concise, neutral, and insightful. Output only the updated summary."
         )
         try:
@@ -537,3 +541,58 @@ async def delete_snapshot(snapshot_id: int, user: User = Depends(get_current_use
         await session.commit()
 
     return {"message": "Snapshot deleted and summary updated"}
+
+@app.post("/update_summary")
+async def update_taste_summary_feedback(
+    data: UpdateSummaryInput,
+    user: User = Depends(get_current_user)
+):
+    async with async_session() as session:
+        try:
+            result = await session.execute(
+                select(TasteSummary).where(TasteSummary.user_id == user.id)
+            )
+            record = result.scalar_one_or_none()
+            old_summary = record.summary if record else "No prior summary."
+
+            prompt = (
+                "You are improving an AI summary of the user's movie taste "
+                "based on new self-description from the user.\n\n"
+                f"Current summary:\n\"{old_summary}\"\n\n"
+                f"User says:\n\"{data.feedback}\"\n\n"
+                "Please revise the summary to reflect this. Address the user directly using 'you'."
+            )
+
+            response = openai.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7,
+            )
+            updated = response.choices[0].message.content.strip()
+
+            print("✅ Summary update result:", updated)
+
+            if record:
+                record.summary = updated
+            else:
+                session.add(TasteSummary(user_id=user.id, summary=updated))
+
+            print("📌 Now adding correction snapshot...")
+            correction_snapshot = TasteSnapshot(
+                user_id=user.id,
+                movie_id=None,
+                action_type="correction",
+                mood_tag=None,
+                gpt_comment=data.feedback,
+                timestamp=datetime.utcnow()
+            )
+            session.add(correction_snapshot)
+
+            await session.commit()
+            print("✅ COMMIT SUCCESS")
+
+            return {"summary": updated}
+
+        except Exception as e:
+            print("❌ COMMIT ERROR:", e)
+            raise HTTPException(status_code=500, detail="Failed to update summary")
