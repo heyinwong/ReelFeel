@@ -150,7 +150,7 @@ async def get_snapshot_history(user: User = Depends(get_current_user)):
         snapshots = result.scalars().all()
         return {
             "snapshots": [
-                {
+                {   "id": s.id,
                     "movie_id": s.movie_id,
                     "timestamp": s.timestamp.isoformat() if s.timestamp else None,
                     "mood": s.mood_tag,
@@ -311,6 +311,7 @@ async def process_taste_modeling(session, user, movie):
 
         snapshot = TasteSnapshot(
             user_id=user.id,
+            movie_title=movie.title,
             movie_id=movie.id,
             action_type="review",
             mood_tag=movie.moods,
@@ -409,7 +410,6 @@ async def read_me(user: User = Depends(get_current_user)):
     return {"id": user.id, "username": user.username}
 
 async def generate_snapshot_comment(movie_title, user_rating, review, mood_tags):
-    # 构造行为信息（逐条判断有没有内容）
     segments = []
 
     if user_rating:
@@ -418,18 +418,17 @@ async def generate_snapshot_comment(movie_title, user_rating, review, mood_tags)
         segments.append(f"commented: \"{review}\"")
     if mood_tags:
         mood_str = ", ".join(mood_tags) if isinstance(mood_tags, list) else mood_tags
-        segments.append(f"tagged their mood as: {mood_str}")
+        segments.append(f"tagged your mood as: {mood_str}")
 
     if not segments:
         segments_text = "watched the movie but gave no specific input"
     else:
         segments_text = "; ".join(segments)
 
-    # 最终 prompt
     prompt = (
-        f"You are an AI assistant analyzing a user's taste based on their recent movie interaction.\n"
-        f"The user watched '{movie_title}' and {segments_text}.\n"
-        f"Write a short sentence (1–2 lines) from your point of view describing what this tells you about the user's taste or preference."
+        "You are an AI assistant giving personal feedback to the user based on their recent movie behavior.\n"
+        f"You watched '{movie_title}' and {segments_text}.\n"
+        "Write a short sentence (1–2 lines) addressing the user directly, describing what this says about your taste or preferences."
     )
 
     try:
@@ -441,23 +440,22 @@ async def generate_snapshot_comment(movie_title, user_rating, review, mood_tags)
         return response.choices[0].message.content.strip()
     except Exception as e:
         print("Error generating snapshot comment:", e)
-        return "The user's behavior is unclear, but it may still reflect a unique taste."
-    
+        return "Your behavior is unclear, but it may still reflect a unique taste."
+
+
 async def update_taste_summary(session: AsyncSession, user_id: int, new_snapshot_text: str):
     from models import TasteSummary
     from sqlalchemy import select
 
-    # 查询旧 summary
     result = await session.execute(select(TasteSummary).where(TasteSummary.user_id == user_id))
     record = result.scalar_one_or_none()
     old_summary = record.summary if record else ""
 
     prompt = (
-        "You are maintaining a user interest profile based on their movie-related behavior.\n"
-        f"Here is the current summary of the user:\n\"{old_summary}\"\n\n"
-        f"Here is a new observation:\n\"{new_snapshot_text}\"\n\n"
-        "Update the user profile by integrating this new observation. Keep it concise, neutral, and analytical. "
-        "Output only the updated summary."
+        "You are maintaining a user interest profile and speaking directly to the user.\n"
+        f"Here is the current AI understanding of your taste:\n\"{old_summary}\"\n\n"
+        f"Here is a new observation about you:\n\"{new_snapshot_text}\"\n\n"
+        "Update your profile using 'you' instead of 'the user'. Be concise, neutral, and insightful. Output only the updated summary."
     )
 
     try:
@@ -468,7 +466,6 @@ async def update_taste_summary(session: AsyncSession, user_id: int, new_snapshot
         )
         updated = response.choices[0].message.content.strip()
 
-        # 写入/更新 summary 表
         if record:
             record.summary = updated
         else:
@@ -478,22 +475,22 @@ async def update_taste_summary(session: AsyncSession, user_id: int, new_snapshot
     except Exception as e:
         print("Error updating taste summary:", e)
 
+
 async def regenerate_taste_summary(session: AsyncSession, user_id: int):
     result = await session.execute(
         select(TasteSnapshot)
         .where(TasteSnapshot.user_id == user_id)
-        .order_by(TasteSnapshot.timestamp.asc())  # 从旧到新
+        .order_by(TasteSnapshot.timestamp.asc())
     )
     snapshots = result.scalars().all()
 
     updated_summary = ""
     for snap in snapshots:
         prompt = (
-            "You are maintaining a user interest profile based on their movie-related behavior.\n"
-            f"Here is the current summary of the user:\n\"{updated_summary}\"\n\n"
-            f"Here is a new observation:\n\"{snap.gpt_comment}\"\n\n"
-            "Update the user profile by integrating this new observation. "
-            "Keep it concise, neutral, and analytical. Output only the updated summary."
+            "You are maintaining a user interest profile and speaking directly to the user.\n"
+            f"Here is the current AI understanding of your taste:\n\"{updated_summary}\"\n\n"
+            f"Here is a new insight about you:\n\"{snap.gpt_comment}\"\n\n"
+            "Update your profile using 'you'. Be concise, neutral, and insightful. Output only the updated summary."
         )
         try:
             response = openai.chat.completions.create(
@@ -505,7 +502,6 @@ async def regenerate_taste_summary(session: AsyncSession, user_id: int):
         except Exception as e:
             print("Error during regeneration:", e)
 
-    # 更新 summary 表
     result = await session.execute(
         select(TasteSummary).where(TasteSummary.user_id == user_id)
     )
@@ -514,3 +510,30 @@ async def regenerate_taste_summary(session: AsyncSession, user_id: int):
         record.summary = updated_summary
     else:
         session.add(TasteSummary(user_id=user_id, summary=updated_summary))
+
+@app.delete("/delete_snapshot/{snapshot_id}")
+async def delete_snapshot(snapshot_id: int, user: User = Depends(get_current_user)):
+    async with async_session() as session:
+        # 1. 查询 snapshot 是否属于当前用户
+        result = await session.execute(
+            select(TasteSnapshot).where(
+                (TasteSnapshot.id == snapshot_id) &
+                (TasteSnapshot.user_id == user.id)
+            )
+        )
+        snapshot = result.scalar_one_or_none()
+
+        if not snapshot:
+            raise HTTPException(status_code=404, detail="Snapshot not found")
+
+        # 2. 删除 snapshot
+        await session.execute(
+            delete(TasteSnapshot).where(TasteSnapshot.id == snapshot_id)
+        )
+
+        # 3. 重建 summary
+        await regenerate_taste_summary(session, user.id)
+
+        await session.commit()
+
+    return {"message": "Snapshot deleted and summary updated"}

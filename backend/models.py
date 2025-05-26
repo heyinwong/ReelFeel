@@ -55,7 +55,7 @@ class TasteSnapshot(Base):
     action_type = Column(String)  # e.g. 'rate', 'review', 'like'
     mood_tag = Column(String, nullable=True)  # if user has selected mood
     gpt_comment = Column(Text)  # GPT's summary on this user
-
+    movie_title = Column(String) 
     user = relationship("User", back_populates="taste_snapshots")
 
 class TasteSummary(Base):

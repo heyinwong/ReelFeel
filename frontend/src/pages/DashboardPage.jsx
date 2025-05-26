@@ -3,20 +3,29 @@ import { useNavigate } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
 import API from "../utils/api";
 import HeaderBar from "../components/HeaderBar";
+import SnapShotList from "../components/SnapShotList";
+import TypingSummary from "../components/TypingSummary";
+import toast from "react-hot-toast";
 
 function DashboardPage() {
   const { user, isLoading, logout } = useAuth();
   const [summary, setSummary] = useState("");
   const [snapshots, setSnapshots] = useState([]);
+  const [showSummary, setShowSummary] = useState(false);
+  const [typingDone, setTypingDone] = useState(false);
+  const [summaryLoading, setSummaryLoading] = useState(false);
   const navigate = useNavigate();
 
-  // ✅ 可导出供其他组件使用（例如删除后刷新）
   const fetchSummary = async () => {
     try {
+      setSummaryLoading(true);
       const res = await API.get("/taste-summary");
+      console.log("🎯 API response:", res.data);
       setSummary(res.data.summary || "");
     } catch (err) {
       console.error("Error fetching summary:", err);
+    } finally {
+      setSummaryLoading(false);
     }
   };
 
@@ -45,6 +54,21 @@ function DashboardPage() {
     }
   }, [isLoading, user, navigate]);
 
+  useEffect(() => {
+    console.log("✅ summary after fetch:", summary);
+  }, [summary]);
+
+  const handleSnapshotDelete = async (snapshot) => {
+    try {
+      await API.delete(`/delete_snapshot/${snapshot.id}`);
+      toast.success("Snapshot deleted.");
+      refreshDashboard();
+    } catch (err) {
+      toast.error("Failed to delete snapshot.");
+      console.error(err);
+    }
+  };
+
   if (isLoading) return <div className="p-6 text-center">Loading...</div>;
 
   return (
@@ -55,31 +79,38 @@ function DashboardPage() {
 
         <section className="mb-10">
           <h2 className="text-xl font-semibold mb-3">🧠 Current AI Summary</h2>
-          <div className="bg-white rounded shadow p-5 text-gray-700 text-base">
-            {summary ? (
-              <p className="italic">"{summary.replace(/^The user/, "You")}"</p>
-            ) : (
-              <p className="text-gray-400">No summary available.</p>
-            )}
-          </div>
+          {!showSummary || !summary ? (
+            <div>
+              <button
+                className="btn btn-primary"
+                onClick={() => setShowSummary(true)}
+                disabled={!summary || summaryLoading}
+              >
+                📋 See your AI insights
+              </button>
+              {!summary && summaryLoading && (
+                <p className="text-sm text-gray-500 mt-2">Loading insights…</p>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <TypingSummary
+                key={summary}
+                text={summary.replace(/^The user/, "You")}
+                onDone={() => setTypingDone(true)}
+              />
+              {typingDone && (
+                <button className="text-blue-600 hover:underline text-sm">
+                  ✏️ I want to update AI
+                </button>
+              )}
+            </div>
+          )}
         </section>
 
         <section>
           <h2 className="text-xl font-semibold mb-4">📜 Recent Snapshots</h2>
-          {snapshots.length === 0 ? (
-            <p className="text-gray-500">No snapshots yet.</p>
-          ) : (
-            <ul className="space-y-4">
-              {snapshots.map((s, i) => (
-                <li key={i} className="bg-white border rounded p-4 shadow-sm">
-                  <div className="text-xs text-gray-500 mb-1">
-                    {new Date(s.timestamp).toLocaleString()}
-                  </div>
-                  <div>{s.comment.replace(/^The user/, "You")}</div>
-                </li>
-              ))}
-            </ul>
-          )}
+          <SnapShotList snapshots={snapshots} onDelete={handleSnapshotDelete} />
         </section>
       </main>
     </div>
@@ -88,7 +119,6 @@ function DashboardPage() {
 
 export default DashboardPage;
 
-// ✅ 可选导出（供外部刷新调用）
 export const useDashboardRefresh = () => {
   const fetchSummary = async () => {
     try {

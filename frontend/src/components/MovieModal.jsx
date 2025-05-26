@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import toast from "react-hot-toast";
 
 const moodOptions = [
   { emoji: "😭", tag: "Moved" },
@@ -25,12 +26,21 @@ function MovieModal({
 }) {
   const [isFlipped, setIsFlipped] = useState(false);
   const [hoveredRating, setHoveredRating] = useState(null);
-  const [localRating, setLocalRating] = useState(movie?.user_rating || 0);
-  const [localLiked, setLocalLiked] = useState(movie?.liked || false);
-  const [review, setReview] = useState(movie?.review || "");
-  const [selectedMoods, setSelectedMoods] = useState(movie?.moods || []);
-  const [watchDate, setWatchDate] = useState(movie?.watch_date || "");
-  const [saveFeedback, setSaveFeedback] = useState("");
+  const [localRating, setLocalRating] = useState(0);
+  const [localLiked, setLocalLiked] = useState(false);
+  const [review, setReview] = useState("");
+  const [selectedMoods, setSelectedMoods] = useState([]);
+  const [watchDate, setWatchDate] = useState("");
+
+  useEffect(() => {
+    if (movie) {
+      setLocalRating(movie.user_rating || 0);
+      setLocalLiked(movie.liked || false);
+      setReview(movie.review || "");
+      setSelectedMoods(movie.moods || []);
+      setWatchDate(movie.watch_date || "");
+    }
+  }, [movie]);
 
   if (!movie) return null;
 
@@ -55,8 +65,7 @@ function MovieModal({
       selectedMoods.length > 0;
 
     if (!hasData) {
-      setSaveFeedback("Nothing to save.");
-      setTimeout(() => setSaveFeedback(""), 2500);
+      toast.error("Nothing to save.");
       return;
     }
 
@@ -70,10 +79,8 @@ function MovieModal({
       ...(isFromWaiting ? { fromWaiting: true } : {}),
     });
 
-    setSaveFeedback("Saved!");
-    setTimeout(() => setSaveFeedback(""), 2500);
-
-    if (isFromWaiting) onClose();
+    toast.success("Review saved!");
+    onClose?.();
   };
 
   const toggleMood = (tag) => {
@@ -164,14 +171,13 @@ function MovieModal({
             </div>
           </div>
 
-          {/* Back (Review Page) */}
+          {/* Back */}
           {!readOnly && (
             <div className="absolute inset-0 bg-white p-6 rounded-xl shadow-lg [backface-visibility:hidden] [transform:rotateY(180deg)]">
               <h3 className="text-xl font-semibold mb-4 text-center">
                 Your Review
               </h3>
 
-              {/* Moods */}
               <div className="flex flex-wrap gap-2 justify-center mb-4">
                 {moodOptions.map(({ emoji, tag }) => (
                   <button
@@ -188,7 +194,6 @@ function MovieModal({
                 ))}
               </div>
 
-              {/* Watch Date */}
               <div className="mb-4">
                 <label className="block text-sm mb-1 text-gray-700 font-medium">
                   Watched on:
@@ -201,7 +206,6 @@ function MovieModal({
                 />
               </div>
 
-              {/* Review */}
               <textarea
                 className="w-full h-40 border rounded p-2 text-sm mb-4"
                 value={review}
@@ -209,7 +213,6 @@ function MovieModal({
                 placeholder="Write what you felt..."
               />
 
-              {/* Rating + Like */}
               <div className="flex gap-3 items-center justify-center mb-4">
                 {renderStars()}
                 <button
@@ -222,13 +225,6 @@ function MovieModal({
                 </button>
               </div>
 
-              {saveFeedback && (
-                <p className="text-sm text-green-600 font-medium text-center mb-2">
-                  {saveFeedback}
-                </p>
-              )}
-
-              {/* Action Buttons */}
               <div className="flex justify-end gap-3">
                 {onDelete && (
                   <button
