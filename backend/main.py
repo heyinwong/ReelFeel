@@ -187,13 +187,37 @@ async def add_waiting(movie: AddMovieInput, user: User = Depends(get_current_use
 @app.delete("/watched/{title}")
 async def delete_watched(title: str, user: User = Depends(get_current_user)):
     async with async_session() as session:
+        # ✅ 先找对应电影
+        result = await session.execute(
+            select(WatchedMovie).where(
+                (WatchedMovie.user_id == user.id) & (WatchedMovie.title == title)
+            )
+        )
+        movie = result.scalar_one_or_none()
+
+        if not movie:
+            raise HTTPException(status_code=404, detail="Movie not found")
+
+        # ✅ 删除 snapshot
+        await session.execute(
+            delete(TasteSnapshot).where(
+                (TasteSnapshot.user_id == user.id) & (TasteSnapshot.movie_id == movie.id)
+            )
+        )
+
+        # ✅ 删除 watched
         await session.execute(
             delete(WatchedMovie).where(
                 (WatchedMovie.user_id == user.id) & (WatchedMovie.title == title)
             )
         )
+
+        # ✅ 重建 summary
+        await regenerate_taste_summary(session, user.id)
+
         await session.commit()
-    return {"message": "Deleted from watched list"}
+
+    return {"message": "Deleted and summary updated"}
 
 @app.delete("/waiting/{title}")
 async def delete_waiting(title: str, user: User = Depends(get_current_user)):
@@ -453,3 +477,40 @@ async def update_taste_summary(session: AsyncSession, user_id: int, new_snapshot
 
     except Exception as e:
         print("Error updating taste summary:", e)
+
+async def regenerate_taste_summary(session: AsyncSession, user_id: int):
+    result = await session.execute(
+        select(TasteSnapshot)
+        .where(TasteSnapshot.user_id == user_id)
+        .order_by(TasteSnapshot.timestamp.asc())  # 从旧到新
+    )
+    snapshots = result.scalars().all()
+
+    updated_summary = ""
+    for snap in snapshots:
+        prompt = (
+            "You are maintaining a user interest profile based on their movie-related behavior.\n"
+            f"Here is the current summary of the user:\n\"{updated_summary}\"\n\n"
+            f"Here is a new observation:\n\"{snap.gpt_comment}\"\n\n"
+            "Update the user profile by integrating this new observation. "
+            "Keep it concise, neutral, and analytical. Output only the updated summary."
+        )
+        try:
+            response = openai.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7,
+            )
+            updated_summary = response.choices[0].message.content.strip()
+        except Exception as e:
+            print("Error during regeneration:", e)
+
+    # 更新 summary 表
+    result = await session.execute(
+        select(TasteSummary).where(TasteSummary.user_id == user_id)
+    )
+    record = result.scalar_one_or_none()
+    if record:
+        record.summary = updated_summary
+    else:
+        session.add(TasteSummary(user_id=user_id, summary=updated_summary))

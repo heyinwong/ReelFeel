@@ -5,7 +5,7 @@ import MovieCard from "../components/MovieCard";
 import MovieModal from "../components/MovieModal";
 import useAuth from "../hooks/useAuth";
 import API from "../utils/api";
-
+import { useDashboardRefresh } from "./DashboardPage"; // 根据路径调整
 function WatchedListPage() {
   const { user, isLoading } = useAuth();
   const [movies, setMovies] = useState([]);

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom"; // ✅ 你漏了这行
+import { useNavigate } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
 import API from "../utils/api";
 import HeaderBar from "../components/HeaderBar";
@@ -8,7 +8,31 @@ function DashboardPage() {
   const { user, isLoading, logout } = useAuth();
   const [summary, setSummary] = useState("");
   const [snapshots, setSnapshots] = useState([]);
-  const navigate = useNavigate(); // ✅ 你用了 navigate 却没定义
+  const navigate = useNavigate();
+
+  // ✅ 可导出供其他组件使用（例如删除后刷新）
+  const fetchSummary = async () => {
+    try {
+      const res = await API.get("/taste-summary");
+      setSummary(res.data.summary || "");
+    } catch (err) {
+      console.error("Error fetching summary:", err);
+    }
+  };
+
+  const fetchSnapshots = async () => {
+    try {
+      const res = await API.get("/snapshot-history");
+      setSnapshots(res.data.snapshots || []);
+    } catch (err) {
+      console.error("Error fetching snapshots:", err);
+    }
+  };
+
+  const refreshDashboard = async () => {
+    await fetchSummary();
+    await fetchSnapshots();
+  };
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -17,15 +41,9 @@ function DashboardPage() {
     }
 
     if (user) {
-      API.get("/taste-summary")
-        .then((res) => setSummary(res.data.summary || ""))
-        .catch((err) => console.error("Error fetching summary:", err));
-
-      API.get("/snapshot-history")
-        .then((res) => setSnapshots(res.data.snapshots || []))
-        .catch((err) => console.error("Error fetching snapshots:", err));
+      refreshDashboard();
     }
-  }, [isLoading, user, navigate]); // ✅ 全部依赖写上
+  }, [isLoading, user, navigate]);
 
   if (isLoading) return <div className="p-6 text-center">Loading...</div>;
 
@@ -69,3 +87,26 @@ function DashboardPage() {
 }
 
 export default DashboardPage;
+
+// ✅ 可选导出（供外部刷新调用）
+export const useDashboardRefresh = () => {
+  const fetchSummary = async () => {
+    try {
+      const res = await API.get("/taste-summary");
+      return res.data.summary || "";
+    } catch {
+      return "";
+    }
+  };
+
+  const fetchSnapshots = async () => {
+    try {
+      const res = await API.get("/snapshot-history");
+      return res.data.snapshots || [];
+    } catch {
+      return [];
+    }
+  };
+
+  return { fetchSummary, fetchSnapshots };
+};
