@@ -60,8 +60,21 @@ function MainPage() {
     setLoading(true);
 
     try {
-      const endpoint = mode === "search" ? "/search" : "/recommend";
-      const response = await API.post(endpoint, { mood: input });
+      let response;
+      if (mode === "search") {
+        response = await API.post("/search", { query: input });
+      } else if (!user) {
+        response = await API.post("/recommend", {
+          mood: input,
+        });
+      } else {
+        response = await API.post("/recommend", {
+          mood: input,
+          user_id: user.id,
+          mode: undefined,
+        });
+      }
+
       const data = response.data;
       const raw = data.recommendations || [];
 
@@ -72,6 +85,7 @@ function MainPage() {
         tmdb_rating: movie.tmdb_rating || movie.rating || "N/A",
         poster: movie.poster || "",
         backdrop: movie.backdrop || "",
+        reason: movie.reason || "",
       }));
 
       setRecommendations(normalized);

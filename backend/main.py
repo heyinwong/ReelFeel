@@ -16,6 +16,7 @@ from datetime import datetime
 import httpx
 from fastapi.responses import JSONResponse
 from auth import router as auth_router
+from typing import Optional
 from database import (
     async_session,
     init_db,
@@ -55,6 +56,8 @@ app.add_middleware(
 # ---------- Pydantic Models ----------
 class MoodInput(BaseModel):
     mood: str
+    mode: Optional[str] = None  # "include_waiting"
+    user_id: Optional[int] = None
 
 class AddMovieInput(BaseModel):
     title: str
@@ -95,28 +98,94 @@ async def fetch_movie_info(title: str):
             }
 
 # ---------- Routes ----------
-
 @app.post("/recommend")
-async def recommend_movies(data: MoodInput):
-    prompt = (
-        f"Return ONLY a JSON array of 3 movie titles that match this mood: '{data.mood}'. "
-        "No explanation, no description, no year. Example: [\"Up\", \"La La Land\", \"Her\"]"
-    )
-
+async def recommend_movies(data: MoodInput, db: AsyncSession = Depends(get_db)):
     try:
+        # === 游客模式（无 user_id） ===
+        if data.user_id is None:
+            prompt = (
+                f"Return ONLY a JSON array of 3 movie titles that match this mood: '{data.mood}'. "
+                "No explanation, no description, no year. Example: [\"Up\", \"La La Land\", \"Her\"]"
+            )
+
+            response = openai.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7,
+            )
+            raw_content = response.choices[0].message.content.strip()
+
+            try:
+                titles = json.loads(raw_content)
+            except json.JSONDecodeError:
+                raise HTTPException(status_code=500, detail=f"Invalid JSON:\n{raw_content}")
+
+            movie_details = []
+            for title in titles:
+                info = await fetch_movie_info(title)
+                if info:
+                    info["reason"] = ""  # 空理由
+                    movie_details.append(info)
+
+            return {"recommendations": movie_details}
+
+        # === 登录用户完整逻辑 ===
+        user_id = data.user_id
+
+        watched_result = await db.execute(
+            select(WatchedMovie.title).where(WatchedMovie.user_id == user_id)
+        )
+        watched_titles = [row[0] for row in watched_result.fetchall()]
+
+        waiting_titles = []
+        if data.mode == "include_waiting":
+            waiting_result = await db.execute(
+                select(WaitingMovie.title).where(WaitingMovie.user_id == user_id)
+            )
+            waiting_titles = [row[0] for row in waiting_result.fetchall()]
+
+        summary_result = await db.execute(
+            select(TasteSummary.summary).where(TasteSummary.user_id == user_id)
+        )
+        taste_summary = summary_result.scalar() or "暂无用户画像。"
+
+        prompt = (
+            f"You are a personalized movie recommender.\n"
+            f"User's taste summary:\n{taste_summary}\n\n"
+            f"User query or mood: {data.mood}\n"
+            f"Do NOT recommend these watched titles:\n{watched_titles}\n"
+        )
+        if waiting_titles:
+            prompt += f"Try to include or prioritize these waiting titles if relevant:\n{waiting_titles}\n"
+
+        prompt += (
+            "Return a JSON array of 3 items, each containing a 'title' and a short 'reason'.\n"
+            "Example: [{\"title\": \"Inception\", \"reason\": \"You enjoy sci-fi mind-bending plots.\"}]\n"
+        )
+
         response = openai.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
         )
         raw_content = response.choices[0].message.content.strip()
+
         try:
-            titles = json.loads(raw_content)
+            recommendations = json.loads(raw_content)
         except json.JSONDecodeError:
             raise HTTPException(status_code=500, detail=f"Invalid JSON:\n{raw_content}")
 
-        movie_details = await asyncio.gather(*(fetch_movie_info(t) for t in titles))
-        return {"recommendations": movie_details}
+        result = []
+        for item in recommendations:
+            title = item.get("title")
+            reason = item.get("reason", "")
+            info = await fetch_movie_info(title)
+            if info:
+                info["reason"] = reason
+                result.append(info)
+
+        return {"recommendations": result}
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

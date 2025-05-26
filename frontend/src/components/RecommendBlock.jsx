@@ -170,6 +170,14 @@ function RecommendBlock({ recommendations, loading, user, onCardClick }) {
           ⭐ {recommendations[current].tmdb_rating ?? "N/A"}
         </p>
         <p className="text-sm mb-4">{recommendations[current].description}</p>
+
+        {/* Recommendation */}
+        {recommendations[current].reason && (
+          <p className="text-sm italic text-gray-600 mb-4">
+            Recommendation：{recommendations[current].reason}
+          </p>
+        )}
+
         <div className="flex justify-center gap-3">
           <button
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
