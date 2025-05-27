@@ -6,7 +6,6 @@ function RecommendBlock({ recommendations, loading, user, onCardClick }) {
   const [current, setCurrent] = useState(0);
   const [feedback, setFeedback] = useState("");
   const navigate = useNavigate();
-
   const total = recommendations.length;
 
   const handleAdd = async (movie, listType) => {
@@ -55,6 +54,7 @@ function RecommendBlock({ recommendations, loading, user, onCardClick }) {
 
   if (!recommendations || recommendations.length === 0) return null;
 
+  // === Single Movie Version ===
   if (total === 1) {
     const movie = recommendations[0];
     return (
@@ -78,21 +78,27 @@ function RecommendBlock({ recommendations, loading, user, onCardClick }) {
           </div>
         </div>
 
-        <div className="bg-white/90 text-black mt-8 rounded-xl shadow-md px-6 py-5 max-w-3xl mx-auto text-center min-h-[240px]">
+        <div className="bg-[#F3E2D4] text-[#281B13] mt-12 rounded-2xl shadow-xl px-8 py-6 max-w-4xl mx-auto text-center min-h-[260px]">
           <h3 className="text-xl font-bold mb-2">{movie.title}</h3>
           <p className="text-yellow-600 font-semibold mb-2">
-            ⭐ {movie.tmdb_rating ?? "N/A"}
+            ⭐{" "}
+            {movie.tmdb_rating ? Number(movie.tmdb_rating).toFixed(1) : "N/A"}
           </p>
           <p className="text-sm mb-4">{movie.description}</p>
+          {movie.reason && (
+            <p className="text-sm italic text-gray-600 mb-4">
+              Recommendation: {movie.reason}
+            </p>
+          )}
           <div className="flex justify-center gap-3">
             <button
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+              className="bg-[#FC7023] hover:bg-orange-600 text-white px-4 py-2 rounded font-semibold"
               onClick={() => handleAdd(movie, "watched")}
             >
               Watched
             </button>
             <button
-              className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded"
+              className="bg-[#FC7023] hover:bg-orange-600 text-white px-4 py-2 rounded font-semibold"
               onClick={() => handleAdd(movie, "waiting")}
             >
               Watchlist
@@ -108,6 +114,7 @@ function RecommendBlock({ recommendations, loading, user, onCardClick }) {
     );
   }
 
+  // === Carousel Version ===
   const prevIndex = (current - 1 + total) % total;
   const nextIndex = (current + 1) % total;
   const visibleMovies = [
@@ -162,31 +169,31 @@ function RecommendBlock({ recommendations, loading, user, onCardClick }) {
         })}
       </div>
 
-      <div className="bg-white/90 text-black mt-8 rounded-xl shadow-md px-6 py-5 max-w-3xl mx-auto text-center min-h-[240px]">
+      <div className="bg-[#F3E2D4] text-[#281B13] mt-12 rounded-2xl shadow-xl px-8 py-6 max-w-4xl mx-auto text-center min-h-[260px]">
         <h3 className="text-xl font-bold mb-2">
           {recommendations[current].title}
         </h3>
         <p className="text-yellow-600 font-semibold mb-2">
-          ⭐ {recommendations[current].tmdb_rating ?? "N/A"}
+          ⭐{" "}
+          {recommendations[current].tmdb_rating
+            ? Number(recommendations[current].tmdb_rating).toFixed(1)
+            : "N/A"}
         </p>
         <p className="text-sm mb-4">{recommendations[current].description}</p>
-
-        {/* Recommendation */}
         {recommendations[current].reason && (
           <p className="text-sm italic text-gray-600 mb-4">
-            Recommendation：{recommendations[current].reason}
+            Recommendation: {recommendations[current].reason}
           </p>
         )}
-
         <div className="flex justify-center gap-3">
           <button
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+            className="bg-[#FC7023] hover:bg-orange-600 text-white px-4 py-2 rounded font-semibold"
             onClick={() => handleAdd(recommendations[current], "watched")}
           >
             Watched
           </button>
           <button
-            className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded"
+            className="bg-[#FC7023] hover:bg-orange-600 text-white px-4 py-2 rounded font-semibold"
             onClick={() => handleAdd(recommendations[current], "waiting")}
           >
             Watchlist
