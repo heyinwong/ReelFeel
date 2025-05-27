@@ -36,8 +36,8 @@ export default function AboutPage() {
           </p>
 
           <p className="mb-4 leading-relaxed">
-            I started logging films I watched not simply to remember what I saw,
-            but to understand why certain stories moved me. Through that
+            The reason I started logging films is not simply to remember what I
+            saw, but to understand why certain stories moved me. Through that
             process, I hoped to understand myself a little better as well.
           </p>
 
