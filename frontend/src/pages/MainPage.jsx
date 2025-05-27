@@ -167,7 +167,7 @@ function MainPage() {
             onCardClick={setSelectedMovie}
           />
         ) : (
-          <div className="flex flex-col items-center justify-center min-h-[220px] text-center">
+          <div className="flex flex-col items-center justify-center min-h-[220px] text-center px-4">
             <motion.h2
               key={mode + "-slogan"}
               initial={{ opacity: 0, y: 6 }}
@@ -176,19 +176,20 @@ function MainPage() {
               className="text-3xl font-bold text-[#F3E2D4] drop-shadow-sm"
             >
               {mode === "mood"
-                ? "Your taste, your reel."
-                : "Looking for something?"}
+                ? "Let your reel unfold from who you are."
+                : "Seeking something specific?"}
             </motion.h2>
+
             <motion.p
               key={mode + "-desc"}
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="text-[#F3E2D4] text-lg mt-2"
+              className="text-[#F3E2D4]/90 text-base sm:text-lg mt-3 max-w-xl"
             >
               {mode === "mood"
-                ? "An AI-crafted film pick that suits your taste."
-                : "Search any film you have in mind."}
+                ? "Describe a feeling, a vibe, or a fleeting thought. We'll find a film that echoes it."
+                : "Type a movie title, or explore suggestions that resonate with your taste."}
             </motion.p>
           </div>
         )}

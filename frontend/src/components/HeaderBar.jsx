@@ -24,7 +24,7 @@ function HeaderBar({ className = "" }) {
 
   return (
     <header
-      className={`sticky top-0 bg-[#281B13]/75 border-b border-[#FC7023] text-white z-50 ${className}`}
+      className={`sticky top-0 bg-[#281B13] border-b border-[#FC7023] text-white z-50 ${className}`}
     >
       <div className="max-w-screen-xl mx-auto flex flex-wrap items-center justify-between px-6 py-5 gap-4">
         {/* Left: Logo + Tagline */}
