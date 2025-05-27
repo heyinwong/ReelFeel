@@ -15,8 +15,8 @@ function HeaderBar({ className = "" }) {
         return "Your movie journey so far";
       case "/waiting":
         return "Your cinematic future awaits";
-      case "/login":
-        return "Sign in to start your reel adventure";
+      case "/about":
+        return "Where this story began, and why.";
       default:
         return "Your detailed dashboard";
     }
@@ -35,7 +35,7 @@ function HeaderBar({ className = "" }) {
           >
             ReelFeel
           </h1>
-          <p className="text-sm sm:text-base text-white font-light italic fade-in-text pt-1 sm:pt-0 sm:ml-2">
+          <p className="text-sm sm:text-base text-white font-light italic pt-1 sm:pt-0 sm:ml-3 fade-in-text">
             {getTagline()}
           </p>
         </div>
@@ -49,6 +49,7 @@ function HeaderBar({ className = "" }) {
           <ReelButton onClick={() => navigate("/dashboard")}>
             Dashboard
           </ReelButton>
+          <ReelButton onClick={() => navigate("/about")}>About</ReelButton>
           {user ? (
             <ReelButton onClick={logout}>Logout ({user.username})</ReelButton>
           ) : (

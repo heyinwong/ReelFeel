@@ -132,23 +132,24 @@ function MainPage() {
       <HeaderBar className="fixed top-0 left-0 w-full z-50" />
 
       <HeroSection />
-
-      <SearchPanel
-        mode={mode}
-        input={input}
-        suggestions={suggestions}
-        onInputChange={handleInputChange}
-        onSubmit={handleSubmit}
-        onSwitchMode={() => {
-          setMode(mode === "mood" ? "search" : "mood");
-          setRecommendations([]);
-          setSuggestions([]);
-          setSubmittedMood("");
-          setSelectedSuggestion(null);
-          setInput("");
-        }}
-        onSelectSuggestion={handleSelectSuggestion}
-      />
+      <div className="relative z-20 -mt-16 sm:-mt-20 flex justify-center px-4">
+        <SearchPanel
+          mode={mode}
+          input={input}
+          suggestions={suggestions}
+          onInputChange={handleInputChange}
+          onSubmit={handleSubmit}
+          onSwitchMode={() => {
+            setMode(mode === "mood" ? "search" : "mood");
+            setRecommendations([]);
+            setSuggestions([]);
+            setSubmittedMood("");
+            setSelectedSuggestion(null);
+            setInput("");
+          }}
+          onSelectSuggestion={handleSelectSuggestion}
+        />
+      </div>
       <div className="px-4 w-full z-10 min-h-[300px] flex items-center justify-center">
         {loading ? (
           <RecommendBlock

@@ -4,6 +4,7 @@ import MainPage from "./pages/MainPage";
 import WatchedListPage from "./pages/WatchedListPage";
 import WaitingListPage from "./pages/WaitingListPage";
 import DashboardPage from "./pages/DashboardPage";
+import AboutPage from "./pages/AboutPage";
 import { Toaster } from "react-hot-toast";
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
         <Route path="/watched" element={<WatchedListPage />} />
         <Route path="/waiting" element={<WaitingListPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/about" element={<AboutPage />} />
       </Routes>
     </Router>
   );
