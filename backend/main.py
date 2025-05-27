@@ -17,6 +17,7 @@ import httpx
 from fastapi.responses import JSONResponse
 from auth import router as auth_router
 from typing import Optional
+from ai import generate_snapshot_comment, regenerate_taste_summary
 from database import (
     async_session,
     init_db,
@@ -225,7 +226,8 @@ async def get_snapshot_history(user: User = Depends(get_current_user)):
                     "movie_id": s.movie_id,
                     "timestamp": s.timestamp.isoformat() if s.timestamp else None,
                     "mood": s.mood_tag,
-                    "comment": s.gpt_comment
+                    "comment": s.gpt_comment,
+                    "movie_title": s.movie_title,
                 }
                 for s in snapshots
             ]
@@ -390,7 +392,7 @@ async def process_taste_modeling(session, user, movie):
         )
         session.add(snapshot)
 
-        await update_taste_summary(session, user.id, snapshot_comment)
+        await regenerate_taste_summary(session, user.id)
         await session.commit()
     except Exception as e:
         print("Snapshot/summary update failed:", e)
@@ -480,109 +482,7 @@ async def movie_by_title(title: str):
 async def read_me(user: User = Depends(get_current_user)):
     return {"id": user.id, "username": user.username}
 
-async def generate_snapshot_comment(movie_title, user_rating, review, mood_tags):
-    segments = []
-
-    if user_rating:
-        segments.append(f"gave it a rating of {user_rating}")
-    if review:
-        segments.append(f"commented: \"{review}\"")
-    if mood_tags:
-        mood_str = ", ".join(mood_tags) if isinstance(mood_tags, list) else mood_tags
-        segments.append(f"tagged your mood as: {mood_str}")
-
-    if not segments:
-        segments_text = "watched the movie but gave no specific input"
-    else:
-        segments_text = "; ".join(segments)
-
-    prompt = (
-        "You are an AI assistant giving personal feedback to the user based on their recent movie behavior.\n"
-        f"You watched '{movie_title}' and {segments_text}.\n"
-        "Write a short sentence (1–2 lines) addressing the user directly, describing what this says about your taste or preferences."
-    )
-
-    try:
-        response = openai.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7,
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        print("Error generating snapshot comment:", e)
-        return "Your behavior is unclear, but it may still reflect a unique taste."
-async def update_taste_summary(session: AsyncSession, user_id: int, new_snapshot_text: str):
-    result = await session.execute(
-        select(TasteSummary).where(TasteSummary.user_id == user_id)
-    )
-    record = result.scalar_one_or_none()
-    old_summary = record.summary if record else ""
-
-    prompt = (
-        "You are maintaining a user interest profile and speaking directly to the user.\n"
-        f"Here is the current AI understanding of your taste:\n\"{old_summary}\"\n\n"
-        f"Here is a new observation:\n\"{new_snapshot_text}\"\n\n"
-        "Update your profile using 'you'. Be concise, neutral, and insightful. Output only the updated summary."
-    )
-
-    try:
-        response = openai.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7,
-        )
-        updated = response.choices[0].message.content.strip()
-
-        if record:
-            record.summary = updated
-        else:
-            new_summary = TasteSummary(user_id=user_id, summary=updated)
-            session.add(new_summary)
-
-    except Exception as e:
-        print("Error updating taste summary:", e)
         
-async def regenerate_taste_summary(session: AsyncSession, user_id: int):
-    result = await session.execute(
-        select(TasteSnapshot)
-        .where(TasteSnapshot.user_id == user_id)
-        .order_by(TasteSnapshot.timestamp.asc())
-    )
-    snapshots = result.scalars().all()
-
-    updated_summary = ""
-    for snap in snapshots:
-        # ✅ 针对 correction 类型，加上说明
-        if snap.action_type == "correction":
-            insight = f'The user explicitly stated: "{snap.gpt_comment}"'
-        else:
-            insight = snap.gpt_comment
-
-        prompt = (
-            "You are maintaining a user interest profile and speaking directly to the user.\n"
-            f"Here is the current AI understanding of your taste:\n\"{updated_summary}\"\n\n"
-            f"Here is a new insight about you:\n\"{insight}\"\n\n"
-            "Update your profile using 'you'. Be concise, neutral, and insightful. Output only the updated summary."
-        )
-        try:
-            response = openai.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.7,
-            )
-            updated_summary = response.choices[0].message.content.strip()
-        except Exception as e:
-            print("Error during regeneration:", e)
-
-    result = await session.execute(
-        select(TasteSummary).where(TasteSummary.user_id == user_id)
-    )
-    record = result.scalar_one_or_none()
-    if record:
-        record.summary = updated_summary
-    else:
-        session.add(TasteSummary(user_id=user_id, summary=updated_summary))
 
 @app.delete("/delete_snapshot/{snapshot_id}")
 async def delete_snapshot(snapshot_id: int, user: User = Depends(get_current_user)):
@@ -618,35 +518,7 @@ async def update_taste_summary_feedback(
 ):
     async with async_session() as session:
         try:
-            result = await session.execute(
-                select(TasteSummary).where(TasteSummary.user_id == user.id)
-            )
-            record = result.scalar_one_or_none()
-            old_summary = record.summary if record else "No prior summary."
-
-            prompt = (
-                "You are improving an AI summary of the user's movie taste "
-                "based on new self-description from the user.\n\n"
-                f"Current summary:\n\"{old_summary}\"\n\n"
-                f"User says:\n\"{data.feedback}\"\n\n"
-                "Please revise the summary to reflect this. Address the user directly using 'you'."
-            )
-
-            response = openai.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.7,
-            )
-            updated = response.choices[0].message.content.strip()
-
-            print("✅ Summary update result:", updated)
-
-            if record:
-                record.summary = updated
-            else:
-                session.add(TasteSummary(user_id=user.id, summary=updated))
-
-            print("📌 Now adding correction snapshot...")
+            # 📌 添加 correction 类型 snapshot
             correction_snapshot = TasteSnapshot(
                 user_id=user.id,
                 movie_id=None,
@@ -657,10 +529,19 @@ async def update_taste_summary_feedback(
             )
             session.add(correction_snapshot)
 
-            await session.commit()
-            print("✅ COMMIT SUCCESS")
+            # ✅ 重建 summary（将所有 snapshot 包括 correction 统一建模）
+            await regenerate_taste_summary(session, user.id)
 
-            return {"summary": updated}
+            await session.commit()
+            print("✅ Summary regenerated with correction.")
+
+            # 🔁 再次获取新 summary 返回给前端
+            result = await session.execute(
+                select(TasteSummary.summary).where(TasteSummary.user_id == user.id)
+            )
+            updated_summary = result.scalar_one_or_none()
+
+            return {"summary": updated_summary or "Summary updated."}
 
         except Exception as e:
             print("❌ COMMIT ERROR:", e)
