@@ -1,32 +1,8 @@
-function ReelButton({
-  children,
-  onClick,
-  variant = "reel",
-  className = "",
-  type = "button",
-  size = "base", // 新增 size 参数
-}) {
-  const base = "btn transition duration-200";
-
-  const variants = {
-    primary: "btn-primary",
-    ghost: "btn-ghost",
-    accent: "btn-accent",
-    reel:
-      "btn btn-outline border-dashed border-white text-white rounded-xl " +
-      "hover:bg-white hover:text-black hover:shadow-md tracking-wide",
-  };
-
-  const sizes = {
-    base: "text-sm sm:text-base px-4 py-2",
-    lg: "text-base sm:text-lg px-6 py-3", // 新增 lg 尺寸
-  };
-
+function ReelButton({ children, onClick, className = "" }) {
   return (
     <button
-      type={type}
       onClick={onClick}
-      className={`${base} ${variants[variant]} ${sizes[size]} ${className}`}
+      className={`border border-[#FC7023] text-[#FC7023] hover:bg-[#FC7023] hover:text-[#281B13] transition-colors rounded-full px-4 py-2 text-sm font-semibold tracking-wide ${className}`}
     >
       {children}
     </button>

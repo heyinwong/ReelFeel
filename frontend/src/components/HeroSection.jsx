@@ -1,26 +1,68 @@
+import { motion } from "framer-motion";
+
+const textVariants = {
+  hidden: { opacity: 0, x: -20 },
+  visible: (i) => ({
+    opacity: 1,
+    x: 0,
+    transition: { delay: i * 0.3, duration: 1 },
+  }),
+};
+
 function HeroSection() {
   return (
-    <div
-      className="w-full h-[400px] flex items-center justify-between px-10 text-[#F3E2D4]"
-      style={{
-        backgroundImage: "url('/banner.jpg')", // 右图背景
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      }}
-    >
-      <div className="max-w-2xl">
-        <h1 className="text-4xl font-bold mb-4">
-          Your mood-based movie companion
-        </h1>
-        <p className="text-lg mb-2">
-          ReelFeel uses AI to understand your unique movie preferences based on
-          your mood, reviews, and past likes.
-        </p>
-        <p className="text-lg">
-          Discover films that resonate emotionally and intellectually — your
-          reel, your story.
-        </p>
+    <div className="relative w-full h-[400px] sm:h-[500px] overflow-hidden text-[#FDF4E3]">
+      {/* 背景图片 */}
+      <img
+        src="/banner.jpg"
+        alt="Vintage cinema"
+        className="absolute inset-0 w-full h-full object-cover object-right"
+      />
+
+      {/* 渐变遮罩过渡到底色 */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#281B13]/95"></div>
+
+      {/* 正文区域（文字 + 动画） */}
+      <div className="relative z-10 px-6 sm:px-10 mt-32 max-w-3xl mx-auto sm:ml-16">
+        <motion.h1
+          className="text-3xl sm:text-5xl font-bold mb-4 drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)]"
+          variants={textVariants}
+          initial="hidden"
+          animate="visible"
+          custom={0}
+        >
+          Discover the films that feel like you.
+        </motion.h1>
+
+        {/* 分隔线 */}
+        <motion.div
+          className="h-1 w-12 bg-[#FC7023] rounded-full mb-4"
+          variants={textVariants}
+          initial="hidden"
+          animate="visible"
+          custom={0.5}
+        />
+
+        <motion.p
+          className="text-base sm:text-lg mb-2 font-normal drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]"
+          variants={textVariants}
+          initial="hidden"
+          animate="visible"
+          custom={1}
+        >
+          <span className="font-semibold">ReelFeel</span> uses AI taste modeling
+          to understand your cinematic identity.
+        </motion.p>
+
+        <motion.p
+          className="text-base sm:text-lg font-normal drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]"
+          variants={textVariants}
+          initial="hidden"
+          animate="visible"
+          custom={2}
+        >
+          It finds the stories that resonate with your thoughts and emotions.
+        </motion.p>
       </div>
     </div>
   );

@@ -10,7 +10,7 @@ function SearchPanel({
   onSelectSuggestion,
 }) {
   return (
-    <div className="w-full bg-[#281B13] py-10 px-4 flex flex-col items-center">
+    <div className="w-full bg-[#281B13] pt-4 pb-10 px-4 flex flex-col items-center -mt-6">
       {/* Slogan and Subtext */}
       <div className="text-center mb-6">
         <motion.h1

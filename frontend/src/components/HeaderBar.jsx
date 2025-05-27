@@ -1,68 +1,58 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import ReelButton from "./ReelButton";
-import useAuth from "../hooks/useAuth"; // ✅ 加这行
+import useAuth from "../hooks/useAuth";
 
 function HeaderBar({ className = "" }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth(); // ✅ 从 hook 中获取状态
+  const { user, logout } = useAuth();
 
   const getTagline = () => {
     switch (location.pathname) {
       case "/":
-        return "Your mood-based movie companion";
+        return "Discover movies that feel like you";
       case "/watched":
-        return "Your movie journey so far 🎬";
+        return "Your movie journey so far";
       case "/waiting":
-        return "Your cinematic future awaits 🍿";
+        return "Your cinematic future awaits";
       case "/login":
         return "Sign in to start your reel adventure";
       default:
-        return "Discover movies that feel like you";
+        return "Your detailed dashboard";
     }
   };
 
   return (
     <header
-      className={`bg-gradient-to-b from-black via-gray-800 to-gray-700 text-white shadow-md border-b border-gray-700 ${className}`}
+      className={`sticky top-0 bg-[#281B13]/75 border-b border-[#FC7023] text-white z-50 ${className}`}
     >
-      <div className="max-w-screen-xl mx-auto flex flex-col sm:flex-row items-center justify-between px-6 py-3 space-y-2 sm:space-y-0">
-        {/* Left Section */}
+      <div className="max-w-screen-xl mx-auto flex flex-wrap items-center justify-between px-6 py-5 gap-4">
+        {/* Left: Logo + Tagline */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 text-center sm:text-left">
           <h1
             onClick={() => navigate("/")}
-            className="text-2xl sm:text-3xl font-extrabold tracking-wide cursor-pointer"
+            className="text-2xl sm:text-3xl font-black tracking-widest text-[#FC7023] cursor-pointer hover:scale-105 transition-transform duration-200"
           >
             ReelFeel
           </h1>
-          <p className="text-sm text-gray-300 font-light fade-in-text">
+          <p className="text-sm sm:text-base text-white font-light italic fade-in-text pt-1 sm:pt-0 sm:ml-2">
             {getTagline()}
           </p>
         </div>
 
-        {/* Right Section */}
-        <nav className="flex gap-2 sm:gap-3 items-center">
-          <ReelButton size="lg" onClick={() => navigate("/watched")}>
-            📽️ Reel Log
-          </ReelButton>
-          <ReelButton size="lg" onClick={() => navigate("/waiting")}>
-            🍿 Watchlist
+        {/* Right: Navigation Buttons */}
+        <nav className="flex flex-wrap gap-2 items-center justify-center">
+          <ReelButton onClick={() => navigate("/watched")}>Reel Log</ReelButton>
+          <ReelButton onClick={() => navigate("/waiting")}>
+            Watchlist
           </ReelButton>
           <ReelButton onClick={() => navigate("/dashboard")}>
-            🧠 Dashboard
+            Dashboard
           </ReelButton>
           {user ? (
-            <ReelButton variant="ghost" size="lg" onClick={logout}>
-              Logout ({user.username})
-            </ReelButton>
+            <ReelButton onClick={logout}>Logout ({user.username})</ReelButton>
           ) : (
-            <ReelButton
-              variant="ghost"
-              size="lg"
-              onClick={() => navigate("/login")}
-            >
-              Login
-            </ReelButton>
+            <ReelButton onClick={() => navigate("/login")}>Login</ReelButton>
           )}
         </nav>
       </div>
