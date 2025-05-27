@@ -31,18 +31,8 @@ function HeroSection() {
           animate="visible"
           custom={0}
         >
-          Discover the films that feel like you.
+          Your reel. Your taste.
         </motion.h1>
-
-        {/* 分隔线 */}
-        <motion.div
-          className="h-1 w-12 bg-[#FC7023] rounded-full mb-4"
-          variants={textVariants}
-          initial="hidden"
-          animate="visible"
-          custom={0.5}
-        />
-
         <motion.p
           className="text-base sm:text-lg mb-2 font-normal drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]"
           variants={textVariants}
