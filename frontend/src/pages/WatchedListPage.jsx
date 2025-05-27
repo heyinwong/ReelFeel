@@ -5,11 +5,15 @@ import MovieCard from "../components/MovieCard";
 import MovieModal from "../components/MovieModal";
 import useAuth from "../hooks/useAuth";
 import API from "../utils/api";
-import { useDashboardRefresh } from "./DashboardPage"; // 根据路径调整
+import MovieFilterBar from "../components/MovieFilterBar";
+import Footer from "../components/Footer";
+
 function WatchedListPage() {
   const { user, isLoading } = useAuth();
   const [movies, setMovies] = useState([]);
   const [selectedMovie, setSelectedMovie] = useState(null);
+  const [sortOption, setSortOption] = useState("added");
+  const [filterOption, setFilterOption] = useState("all");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -70,30 +74,66 @@ function WatchedListPage() {
     }
   };
 
+  const sortedAndFiltered = [...movies]
+    .filter((m) => {
+      if (filterOption === "unreview") {
+        return !m.user_rating && !m.review && !m.liked && !m.watch_date;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortOption === "title") {
+        return a.title.localeCompare(b.title);
+      } else if (sortOption === "rating") {
+        return (b.user_rating || 0) - (a.user_rating || 0);
+      } else if (sortOption === "watchdate") {
+        return new Date(b.watch_date) - new Date(a.watch_date);
+      }
+      return 0;
+    });
+
   return (
-    <div className="relative min-h-screen w-full overflow-x-hidden">
-      {/* 背景图 + 遮罩 */}
+    <div className="min-h-screen flex flex-col relative w-full overflow-x-hidden">
+      {/* 背景层 */}
       <div
         className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url('/reel_wall.jpg')" }}
+        style={{
+          backgroundImage: "url('/reel_wall.jpg')",
+          backgroundAttachment: "fixed",
+        }}
       />
-      {/* 背景上的遮罩效果（顶部压暗，底部轻光） */}
       <div className="absolute inset-0 z-0 pointer-events-none">
-        {/* 顶部暗角（增加聚焦感） */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent" />
-
-        {/* 整体柔光混合（提升内容清晰度） */}
         <div className="absolute inset-0 bg-white/10 mix-blend-overlay" />
       </div>
-      {/* 主内容区 */}
-      <div className="relative z-10">
+
+      {/* 主内容区域 */}
+      <div className="relative z-10 flex-1">
         <HeaderBar />
-        <div className="px-6 py-8 max-w-screen-xl mx-auto">
-          {movies.length === 0 ? (
-            <p className="text-gray-100">Your watched list is empty.</p>
+
+        <div className="px-6 pt-8 max-w-screen-xl mx-auto">
+          <MovieFilterBar
+            sortOption={sortOption}
+            setSortOption={setSortOption}
+            filterOption={filterOption}
+            setFilterOption={setFilterOption}
+            sortOptions={[
+              { value: "added", label: "Sort by Added" },
+              { value: "title", label: "Sort by Title" },
+              { value: "rating", label: "Sort by Rating" },
+              { value: "watchdate", label: "Sort by Watch Date" },
+            ]}
+            filterOptions={[
+              { value: "all", label: "All" },
+              { value: "unreview", label: "Unreviewed Only" },
+            ]}
+          />
+
+          {sortedAndFiltered.length === 0 ? (
+            <p className="text-gray-100">No movies match your criteria.</p>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-              {movies.map((movie) => (
+              {sortedAndFiltered.map((movie) => (
                 <MovieCard
                   key={movie.title}
                   movie={{ ...movie, mode: "watched" }}
@@ -103,13 +143,17 @@ function WatchedListPage() {
             </div>
           )}
         </div>
+
         <MovieModal
           movie={selectedMovie}
           onClose={() => setSelectedMovie(null)}
           onReview={handleReview}
-          onDelete={handleDelete} // ✅ 加上这个！
+          onDelete={handleDelete}
         />
       </div>
+
+      {/* Footer 固定在底部 */}
+      <Footer />
     </div>
   );
 }

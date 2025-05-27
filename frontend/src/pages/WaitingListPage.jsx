@@ -6,11 +6,14 @@ import MovieModal from "../components/MovieModal";
 import toast from "react-hot-toast";
 import useAuth from "../hooks/useAuth";
 import API from "../utils/api";
+import Footer from "../components/Footer";
+import MovieFilterBar from "../components/MovieFilterBar";
 
 function WaitingListPage() {
   const { user, isLoading } = useAuth();
   const [movies, setMovies] = useState([]);
   const [selectedMovie, setSelectedMovie] = useState(null);
+  const [sortOption, setSortOption] = useState("added");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -47,13 +50,11 @@ function WaitingListPage() {
   };
 
   const handleReview = async (movie) => {
-    // ✅ 新增逻辑：如果是“删除”，就直接调用 handleDelete
     if (movie.delete) {
       await handleDelete(movie);
       return;
     }
 
-    // ✅ 原有逻辑：判断是否为从 waiting list 转移到 watched
     const hasReviewData =
       movie.user_rating > 0 ||
       movie.liked ||
@@ -75,30 +76,49 @@ function WaitingListPage() {
     }
   };
 
+  const sorted = [...movies].sort((a, b) => {
+    if (sortOption === "title") {
+      return a.title.localeCompare(b.title);
+    }
+    return 0; // default to added order
+  });
+
   return (
-    <div className="relative min-h-screen w-full overflow-hidden">
+    <div className="flex flex-col min-h-screen w-full overflow-hidden">
       {/* 背景图 + 滤镜 */}
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{
-          backgroundImage: "url('/reel_wall.jpg')",
+          backgroundImage: "url('/theater.jpg')",
           backgroundAttachment: "fixed",
-          filter: "hue-rotate(150deg) brightness(0.9) saturate(0.9)",
         }}
       />
-      <div className="absolute inset-0 z-0 pointer-events-none">
+      <div className="absolute inset-0 bg-black/20 mix-blend-multiply pointer-events-none" />
+      <div className="absolute inset-0 -z-10 pointer-events-none">
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent" />
         <div className="absolute inset-0 bg-white/10 mix-blend-overlay" />
       </div>
 
-      <div className="relative z-10 text-white">
+      <div className="relative z-10 flex-grow text-white">
         <HeaderBar />
-        <div className="px-6 py-8 max-w-screen-xl mx-auto">
-          {movies.length === 0 ? (
+        <div className="px-6 pt-8 max-w-screen-xl mx-auto">
+          <MovieFilterBar
+            sortOption={sortOption}
+            setSortOption={setSortOption}
+            filterOption={null}
+            setFilterOption={() => {}}
+            sortOptions={[
+              { value: "added", label: "Sort by Added" },
+              { value: "title", label: "Sort by Title" },
+            ]}
+            hideFilter={true}
+          />
+
+          {sorted.length === 0 ? (
             <p className="text-gray-200">Your watchlist is empty.</p>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-              {movies.map((movie) => (
+              {sorted.map((movie) => (
                 <MovieCard
                   key={movie.title}
                   movie={{ ...movie, mode: "waiting" }}
@@ -114,8 +134,10 @@ function WaitingListPage() {
         movie={selectedMovie}
         onClose={() => setSelectedMovie(null)}
         onReview={handleReview}
-        onDelete={handleDelete} // ✅ 加上这个！
+        onDelete={handleDelete}
       />
+
+      <Footer />
     </div>
   );
 }
