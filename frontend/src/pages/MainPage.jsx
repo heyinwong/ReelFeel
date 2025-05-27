@@ -7,6 +7,8 @@ import HeroSection from "../components/HeroSection";
 import SearchPanel from "../components/SearchPanel";
 import useAuth from "../hooks/useAuth";
 import API from "../utils/api";
+import Footer from "../components/Footer";
+import { motion } from "framer-motion";
 
 function MainPage() {
   const { user, isLoading } = useAuth();
@@ -20,6 +22,7 @@ function MainPage() {
   const [selectedSuggestion, setSelectedSuggestion] = useState(null);
   const debounceRef = useRef(null);
   const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInputChange = (e) => {
     const value = e.target.value;
@@ -31,7 +34,7 @@ function MainPage() {
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
-    if (value.length >= 2 && mode === "search") {
+    if (value.length >= 2 && mode === "search" && !isSubmitting) {
       debounceRef.current = setTimeout(() => {
         fetchSuggestions(value);
       }, 300);
@@ -55,6 +58,7 @@ function MainPage() {
 
   const handleSubmit = async (e = null) => {
     if (e) e.preventDefault();
+    setIsSubmitting(true);
     setSuggestions([]);
     setSubmittedMood(input);
     setRecommendations([]);
@@ -94,6 +98,7 @@ function MainPage() {
     } finally {
       setLoading(false);
     }
+    setIsSubmitting(false);
   };
 
   const handleSelectSuggestion = async (movie) => {
@@ -144,23 +149,49 @@ function MainPage() {
         }}
         onSelectSuggestion={handleSelectSuggestion}
       />
-
-      <div className=" px-4 w-full z-10 min-h-[300px] flex items-center justify-center">
-        {recommendations.length > 0 ? (
+      <div className="px-4 w-full z-10 min-h-[300px] flex items-center justify-center">
+        {loading ? (
+          <RecommendBlock
+            mood={submittedMood}
+            recommendations={[]} // 空列表，用于 loading 状态占位
+            loading={true}
+            user={user}
+          />
+        ) : recommendations.length > 0 ? (
           <RecommendBlock
             mood={submittedMood}
             recommendations={recommendations}
-            loading={loading}
+            loading={false}
             user={user}
             onCardClick={setSelectedMovie}
           />
         ) : (
-          <p className="text-[#F3E2D4] text-xl italic opacity-80 -translate-y-6 text-center">
-            Let’s find a film that suits your mood.
-          </p>
+          <div className="flex flex-col items-center justify-center min-h-[220px] text-center">
+            <motion.h2
+              key={mode + "-slogan"}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="text-3xl font-bold text-[#F3E2D4] drop-shadow-sm"
+            >
+              {mode === "mood"
+                ? "Your taste, your reel."
+                : "Looking for something?"}
+            </motion.h2>
+            <motion.p
+              key={mode + "-desc"}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="text-[#F3E2D4] text-lg mt-2"
+            >
+              {mode === "mood"
+                ? "An AI-crafted film pick that suits your taste."
+                : "Search any film you have in mind."}
+            </motion.p>
+          </div>
         )}
       </div>
-
       {selectedMovie && typeof selectedMovie === "object" && (
         <MovieModal
           movie={selectedMovie}
@@ -168,6 +199,7 @@ function MainPage() {
           readOnly={true}
         />
       )}
+      <Footer />
     </div>
   );
 }

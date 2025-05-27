@@ -10,33 +10,7 @@ function SearchPanel({
   onSelectSuggestion,
 }) {
   return (
-    <div className="w-full bg-[#281B13] pt-4 pb-10 px-4 flex flex-col items-center -mt-6">
-      {/* Slogan and Subtext */}
-      <div className="text-center mb-6">
-        <motion.h1
-          key={mode}
-          className="text-4xl font-extrabold mb-2 tracking-wide text-[#F3E2D4] drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)]"
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.4 }}
-        >
-          {mode === "mood"
-            ? "Your taste, your reel."
-            : "Looking for something?"}
-        </motion.h1>
-        <motion.p
-          key={mode + "-desc"}
-          className="text-[#F3E2D4] text-lg"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.2, delay: 0.5 }}
-        >
-          {mode === "mood"
-            ? "An AI-crafted film pick that suits your taste."
-            : "Search any film you have in mind."}
-        </motion.p>
-      </div>
-
+    <div className="w-full bg-[#281B13] pt-4 pb-10 px-4 flex flex-col items-center -mt-12">
       {/* Input Form */}
       <form
         onSubmit={onSubmit}
@@ -71,21 +45,21 @@ function SearchPanel({
 
         {/* Suggestion Dropdown */}
         {mode === "search" && suggestions.length > 0 && (
-          <ul className="absolute top-full left-0 mt-2 w-full bg-[#303642] border border-white/10 rounded-md shadow z-50 text-white max-h-[200px] overflow-y-auto">
+          <ul className="absolute top-full left-0 mt-2 w-full bg-[#1f1f25]/95 border border-[#FC7023]/30 rounded-xl shadow-xl backdrop-blur-sm z-50 text-white max-h-[240px] overflow-y-auto transition-all duration-300">
             {suggestions.map((movie) => (
               <li
                 key={movie.id}
-                className="flex items-center gap-3 px-4 py-2 hover:bg-white/10 cursor-pointer"
+                className="flex items-center gap-3 px-4 py-2 hover:bg-[#FC7023]/20 cursor-pointer transition-all"
                 onClick={() => onSelectSuggestion(movie)}
               >
                 {movie.poster && (
                   <img
                     src={movie.poster}
                     alt={movie.title}
-                    className="w-8 h-12 object-cover rounded"
+                    className="w-8 h-12 object-cover rounded shadow-sm"
                   />
                 )}
-                <span className="text-sm">{movie.title}</span>
+                <span className="text-sm font-medium">{movie.title}</span>
               </li>
             ))}
           </ul>

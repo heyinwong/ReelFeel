@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../utils/api";
+import toast from "react-hot-toast";
 
 function RecommendBlock({ recommendations, loading, user, onCardClick }) {
   const [current, setCurrent] = useState(0);
-  const [feedback, setFeedback] = useState("");
   const navigate = useNavigate();
   const total = recommendations.length;
 
@@ -25,14 +25,12 @@ function RecommendBlock({ recommendations, loading, user, onCardClick }) {
         throw new Error(response.data?.detail || "Failed to add");
       }
 
-      setFeedback(
-        `✅ Added to ${listType === "watched" ? "Reel Log" : "Watchlist"}`
+      toast.success(
+        `Added to ${listType === "watched" ? "Reel Log" : "Watchlist"}`
       );
-      setTimeout(() => setFeedback(""), 3000);
     } catch (error) {
       console.error(error);
-      setFeedback("❌ Failed to add movie.");
-      setTimeout(() => setFeedback(""), 3000);
+      toast.error("Failed to add movie.");
     }
   };
 
@@ -46,9 +44,9 @@ function RecommendBlock({ recommendations, loading, user, onCardClick }) {
 
   if (loading) {
     return (
-      <p className="text-gray-400 italic text-center mt-6">
-        Loading recommendations...
-      </p>
+      <div className="flex justify-center mt-12">
+        <div className="w-8 h-8 border-4 border-orange-300 border-t-transparent rounded-full animate-spin"></div>
+      </div>
     );
   }
 
@@ -104,11 +102,6 @@ function RecommendBlock({ recommendations, loading, user, onCardClick }) {
               Watchlist
             </button>
           </div>
-          {feedback && (
-            <p className="text-sm mt-4 text-green-600 font-medium">
-              {feedback}
-            </p>
-          )}
         </div>
       </div>
     );
@@ -199,9 +192,6 @@ function RecommendBlock({ recommendations, loading, user, onCardClick }) {
             Watchlist
           </button>
         </div>
-        {feedback && (
-          <p className="text-sm mt-4 text-green-600 font-medium">{feedback}</p>
-        )}
       </div>
     </div>
   );
