@@ -1,52 +1,90 @@
+// components/SnapShotList.js
+import { useState } from "react";
+import { Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 function SnapShotList({ snapshots, onDelete }) {
+  const [selectedId, setSelectedId] = useState(null);
+
   if (!snapshots || snapshots.length === 0) {
-    return <p className="text-gray-500">No snapshots yet.</p>;
+    return <p className="text-[#F3E2D4]/60">No snapshots yet.</p>;
   }
 
-  return (
-    <ul className="space-y-4">
-      <AnimatePresence>
-        {snapshots.map((s, i) => {
-          const isCorrection = s.movie_id === null;
-          const tagText = isCorrection
-            ? "User"
-            : s.comment.match(/'(.*?)'/)?.[1] || "Movie";
+  const sorted = [...snapshots].sort(
+    (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+  );
 
-          return (
-            <motion.li
-              key={s.id || i}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-              className="group bg-white border border-gray-200 hover:border-gray-400 rounded p-4 shadow-sm transition-all duration-200 hover:scale-[1.015] flex justify-between items-start"
-            >
-              <div className="flex-1">
-                <div className="text-xs text-gray-500 mb-1">
-                  {new Date(s.timestamp).toLocaleString()}
-                </div>
-                <div>
-                  <span className="inline-block bg-gray-100 text-indigo-600 text-xs font-semibold px-2 py-1 rounded mr-2">
+  return (
+    <div className="overflow-x-hidden">
+      <ul className="space-y-6 border-l border-[#FC7023]/40 pl-6 relative">
+        <AnimatePresence initial={false}>
+          {sorted.map((s) => {
+            const isCorrection = s.movie_id === null;
+            const tagText = isCorrection
+              ? "User"
+              : s.comment.match(/'(.*?)'/)?.[1] || "Movie";
+            const tagStyle = isCorrection ? "bg-[#b85e2e]" : "bg-[#FC7023]";
+            const isSelected = s.id === selectedId;
+
+            return (
+              <motion.li
+                key={s.id}
+                layout
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="relative group"
+              >
+                {/* Timeline Dot */}
+                <div className="absolute -left-[22px] top-1.5 w-3 h-3 rounded-full bg-[#FC7023] border border-[#F3E2D4]" />
+
+                {/* Summary line */}
+                <div
+                  className="cursor-pointer text-sm text-[#F3E2D4] hover:text-[#FC7023] transition"
+                  onClick={() =>
+                    setSelectedId((prev) => (prev === s.id ? null : s.id))
+                  }
+                >
+                  {new Date(s.timestamp).toLocaleDateString()} —{" "}
+                  <span
+                    className={`inline-block px-2 py-0.5 rounded text-xs font-semibold text-white ${tagStyle}`}
+                  >
                     {tagText}
                   </span>
-                  <span>{s.comment.replace(/^The user/, "You")}</span>
                 </div>
-              </div>
-              {onDelete && (
-                <button
-                  className="text-sm text-red-500 hover:underline ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
-                  onClick={() => onDelete(s)}
-                >
-                  Delete
-                </button>
-              )}
-            </motion.li>
-          );
-        })}
-      </AnimatePresence>
-    </ul>
+
+                {/* Expanded Detail */}
+                <AnimatePresence>
+                  {isSelected && (
+                    <motion.div
+                      layout
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className="bg-[#E9D6C5] text-[#281B13] mt-2 rounded-md p-4 text-sm leading-relaxed border border-[#dcc6b0]"
+                    >
+                      <div className="flex justify-between items-start">
+                        <p>{s.comment.replace(/^The user/, "You")}</p>
+                        {onDelete && (
+                          <button
+                            onClick={() => onDelete(s)}
+                            className="text-[#9e3b3b] hover:text-red-600 transition ml-4"
+                            title="Delete snapshot"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.li>
+            );
+          })}
+        </AnimatePresence>
+      </ul>
+    </div>
   );
 }
 

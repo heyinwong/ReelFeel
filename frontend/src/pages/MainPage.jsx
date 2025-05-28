@@ -131,7 +131,12 @@ function MainPage() {
     <div className="w-full min-h-screen bg-[#281B13] text-white">
       <HeaderBar className="fixed top-0 left-0 w-full z-50" />
 
-      <HeroSection />
+      <HeroSection
+        title="Your reel. Your taste."
+        subtitle1="ReelFeel uses AI taste modeling to understand your cinematic identity."
+        subtitle2="It finds the stories that resonate with your thoughts and emotions."
+        imageSrc="/hero.jpg" // 可省略，默认就是这个
+      />
       <div className="relative z-20 -mt-16 sm:-mt-20 flex justify-center px-4">
         <SearchPanel
           mode={mode}

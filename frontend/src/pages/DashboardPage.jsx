@@ -6,8 +6,10 @@ import HeaderBar from "../components/HeaderBar";
 import SnapShotList from "../components/SnapShotList";
 import TypingSummary from "../components/TypingSummary";
 import UpdateSummaryModal from "../components/UpdateSummaryModal";
+import Footer from "../components/Footer";
 import toast from "react-hot-toast";
 import { ChevronUp, ChevronDown } from "lucide-react";
+
 function DashboardPage() {
   const { user, isLoading, logout } = useAuth();
   const [summary, setSummary] = useState("");
@@ -16,14 +18,14 @@ function DashboardPage() {
   const [typingDone, setTypingDone] = useState(false);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [showSnapshots, setShowSnapshots] = useState(false);
   const navigate = useNavigate();
-  const [showSnapshots, setShowSnapshots] = useState(true);
+
   const fetchSummary = async () => {
     try {
       setSummaryLoading(true);
       const res = await API.get("/taste-summary");
-      const fetched = res.data.summary || "";
-      setSummary(fetched);
+      setSummary(res.data.summary || "");
     } catch (err) {
       console.error("Error fetching summary:", err);
     } finally {
@@ -41,8 +43,7 @@ function DashboardPage() {
   };
 
   const refreshDashboard = async () => {
-    await fetchSummary();
-    await fetchSnapshots();
+    await Promise.all([fetchSummary(), fetchSnapshots()]);
   };
 
   useEffect(() => {
@@ -73,47 +74,73 @@ function DashboardPage() {
   if (isLoading) return <div className="p-6 text-center">Loading...</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-800">
-      <HeaderBar username={user?.username} onLogout={logout} />
-      <main className="max-w-4xl mx-auto px-6 py-10">
-        <h1 className="text-3xl font-bold mb-6">Your Taste Dashboard</h1>
+    <div className="min-h-screen flex flex-col bg-[#281B13] text-[#F3E2D4]">
+      <HeaderBar />
 
-        <section className="mb-10">
-          <h2 className="text-xl font-semibold mb-3">Current AI Summary</h2>
-          {!showSummary || !summary ? (
-            <div>
-              <button
-                className="btn btn-primary"
-                onClick={() => setShowSummary(true)}
-                disabled={!summary || summaryLoading}
-              >
-                See your AI insights
-              </button>
-              {!summary && summaryLoading && (
-                <p className="text-sm text-gray-500 mt-2">Loading insights…</p>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <TypingSummary text={summary.replace(/^The user/, "You")} />
-              {typingDone && (
+      {/* 添加 flex-1 包住中间内容 */}
+      <div className="flex-1">
+        <div className="relative">
+          <img
+            src="/cinema-paradiso-hero.jpg"
+            alt="dashboard backdrop"
+            className="absolute inset-0 w-full h-[600px] object-cover object-center z-0"
+          />
+          <div className="absolute inset-0 h-[600px] bg-gradient-to-b from-transparent to-[#281B13] z-10"></div>
+
+          <div className="relative z-20 max-w-4xl mx-auto text-center px-6 pt-20">
+            <h1 className="text-3xl sm:text-4xl font-bold mb-2">
+              Your Taste Dashboard
+            </h1>
+            <p className="text-sm sm:text-base text-[#F3E2D4]/90 mb-6">
+              An AI-generated reflection of your movie identity.
+            </p>
+
+            <h2 className="text-xl font-semibold mb-3 text-[#FC7023]">
+              Current AI Summary
+            </h2>
+
+            {!showSummary || !summary ? (
+              <div>
                 <button
-                  className="text-blue-600 hover:underline text-sm"
-                  onClick={() => setShowUpdateModal(true)}
+                  className="bg-[#FC7023] hover:bg-orange-500 text-white px-4 py-2 rounded-md transition"
+                  onClick={() => setShowSummary(true)}
+                  disabled={!summary || summaryLoading}
                 >
-                  I want to update AI
+                  See your AI insights
                 </button>
-              )}
-            </div>
-          )}
-        </section>
+                {!summary && summaryLoading && (
+                  <p className="text-sm text-gray-300 mt-2">
+                    Loading insights…
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4 max-w-3xl mx-auto">
+                <TypingSummary text={summary.replace(/^The user/, "You")} />
+                {typingDone && (
+                  <div className="text-center">
+                    <button
+                      className="text-[#FC7023] hover:underline text-sm"
+                      onClick={() => setShowUpdateModal(true)}
+                    >
+                      I want to update AI
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
 
-        <section>
+        {/* Snapshots Section */}
+        <div className="relative z-10 w-full px-6 py-12 max-w-3xl mx-auto overflow-x-hidden">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Recent Snapshots</h2>
+            <h2 className="text-xl font-semibold text-[#FC7023]">
+              Recent Snapshots
+            </h2>
             <button
               onClick={() => setShowSnapshots(!showSnapshots)}
-              className="text-gray-500 hover:text-gray-800 transition"
+              className="text-[#F3E2D4] hover:text-[#FC7023] transition"
             >
               {showSnapshots ? (
                 <ChevronUp size={20} />
@@ -129,38 +156,20 @@ function DashboardPage() {
               onDelete={handleSnapshotDelete}
             />
           )}
-        </section>
-      </main>
+        </div>
+      </div>
+
+      {/* Modal + Footer */}
       {showUpdateModal && (
         <UpdateSummaryModal
           onClose={() => setShowUpdateModal(false)}
           onUpdated={refreshDashboard}
         />
       )}
+
+      <Footer />
     </div>
   );
 }
 
 export default DashboardPage;
-
-export const useDashboardRefresh = () => {
-  const fetchSummary = async () => {
-    try {
-      const res = await API.get("/taste-summary");
-      return res.data.summary || "";
-    } catch {
-      return "";
-    }
-  };
-
-  const fetchSnapshots = async () => {
-    try {
-      const res = await API.get("/snapshot-history");
-      return res.data.snapshots || [];
-    } catch {
-      return [];
-    }
-  };
-
-  return { fetchSummary, fetchSnapshots };
-};
