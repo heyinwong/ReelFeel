@@ -62,24 +62,30 @@ async def regenerate_taste_summary(session: AsyncSession, user_id: int):
         elif snap.gpt_comment:
             behavior_observations.append(snap.gpt_comment)
 
-    # 构造 prompt
-    prompt = "You are building a personalized movie taste profile for the user.\n\n"
-
+    # 构造 sections
+    user_insights_section = ""
     if user_insights:
-        prompt += "Insights explicitly provided by the user:\n"
+        user_insights_section += "The user has directly shared the following personal insights:\n"
         for insight in user_insights:
-            prompt += f"- {insight}\n"
-        prompt += "\n"
+            user_insights_section += f"- {insight}\n"
 
+    behavior_observations_section = ""
     if behavior_observations:
-        prompt += "Observations based on the user's reviews, moods, and preferences:\n"
+        behavior_observations_section += "\nBased on the user's reviews, moods, and preferences, here are additional observations:\n"
         for obs in behavior_observations:
-            prompt += f"- {obs}\n"
-        prompt += "\n"
+            behavior_observations_section += f"- {obs}\n"
 
-    prompt += (
-        "Based on the above, write a concise and expressive paragraph summarizing the user's movie taste. "
-        "Use 'you' to address the user directly. Prioritize user-provided insights, but integrate both sources naturally."
+    # 构造 prompt
+    prompt = (
+        "You are an AI assistant helping a user understand their personal movie preferences.\n"
+        "You've observed their reviews, moods, and direct feedback over time.\n\n"
+        f"{user_insights_section}\n"
+        f"{behavior_observations_section}\n"
+        "Now, write a short and thoughtful summary (3–5 sentences) that directly addresses the user (use 'you').\n"
+        "Prioritize and respect the user's explicit insights, integrating them naturally into your message.\n"
+        "The tone should be personal, warm, and perceptive — like someone who's been quietly observing and now offers gentle insights.\n"
+        "Avoid sounding overly poetic or robotic. You may reference 1–2 specific behaviors or movies, but don’t list them all.\n"
+        "Make it feel cohesive, grounded, and human."
     )
 
     try:
