@@ -92,7 +92,7 @@ function DashboardPage() {
               Your Taste Dashboard
             </h1>
             <p className="text-sm sm:text-base text-[#F3E2D4]/90 mb-6">
-              An AI-generated reflection of your movie identity.
+              A reflection of your movie identity.
             </p>
 
             <h2 className="text-xl font-semibold mb-3 text-[#FC7023]">

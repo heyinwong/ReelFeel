@@ -9,6 +9,7 @@ function SearchPanel({
   onInputChange,
   onSubmit,
   onSwitchMode,
+  loading,
   onSelectSuggestion,
 }) {
   const [hovering, setHovering] = useState(false);
@@ -55,11 +56,23 @@ function SearchPanel({
         />
 
         {/* 右侧按钮 */}
+        {/* 右侧按钮（含 loading 状态） */}
         <button
           type="submit"
-          className="w-[130px] h-[48px] bg-[#E95E1D] text-white rounded-md text-base font-semibold hover:bg-[#D94F13] active:scale-95 transition-all shadow"
+          disabled={loading}
+          className={`w-[130px] h-[48px] rounded-md text-base font-semibold transition-all shadow flex items-center justify-center ${
+            loading
+              ? "bg-[#E95E1D]/60 cursor-not-allowed"
+              : "bg-[#E95E1D] text-white hover:bg-[#D94F13] active:scale-95"
+          }`}
         >
-          {mode === "mood" ? "Recommend" : "Find Movie"}
+          {loading ? (
+            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          ) : mode === "mood" ? (
+            "Recommend"
+          ) : (
+            "Find Movie"
+          )}
         </button>
 
         {/* 搜索建议下拉 */}

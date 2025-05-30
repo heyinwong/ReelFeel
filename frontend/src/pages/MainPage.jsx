@@ -9,6 +9,7 @@ import useAuth from "../hooks/useAuth";
 import API from "../utils/api";
 import Footer from "../components/Footer";
 import { motion } from "framer-motion";
+import { Typewriter } from "react-simple-typewriter";
 
 function MainPage() {
   const { user, isLoading } = useAuth();
@@ -143,6 +144,7 @@ function MainPage() {
           input={input}
           suggestions={suggestions}
           onInputChange={handleInputChange}
+          loading={loading}
           onSubmit={handleSubmit}
           onSwitchMode={() => {
             setMode(mode === "mood" ? "search" : "mood");
@@ -157,12 +159,24 @@ function MainPage() {
       </div>
       <div className="px-4 w-full z-10 min-h-[300px] flex items-center justify-center">
         {loading ? (
-          <RecommendBlock
-            mood={submittedMood}
-            recommendations={[]} // 空列表，用于 loading 状态占位
-            loading={true}
-            user={user}
-          />
+          <div className="flex flex-col items-center justify-center min-h-[220px] text-center px-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4 }}
+              className="text-[#F3E2D4]/90 text-lg sm:text-xl font-medium"
+            >
+              <Typewriter
+                words={["Finding stories that feel like you..."]}
+                loop={false}
+                cursor
+                cursorStyle="_"
+                typeSpeed={40}
+                deleteSpeed={0}
+                delaySpeed={1000}
+              />
+            </motion.div>
+          </div>
         ) : recommendations.length > 0 ? (
           <RecommendBlock
             mood={submittedMood}
