@@ -1,4 +1,4 @@
-# ReelFeel: AI-Powered Taste-Based Movie Recommender
+# ReelFeel: A taste-based movie recommender web app powered by AI
 
 A full-stack project that uses AI to understand your cinematic taste — not by genre or public rating, but by how you respond to films.
 
