@@ -47,7 +47,7 @@ function RecommendBlock({ recommendations, loading, user, onCardClick }) {
   if (!recommendations || recommendations.length === 0) return null;
 
   return (
-    <div className="w-full max-w-6xl mx-auto mt-12 px-4 sm:px-6 overflow-x-hidden transition-all duration-300 ease-in-out">
+    <div className="w-full max-w-6xl mx-auto mt-12 px-4 sm:px-6 overflow-x-hidden overflow-y-hidden transition-all duration-300 ease-in-out">
       <CarouselStrip
         movies={recommendations}
         current={current}

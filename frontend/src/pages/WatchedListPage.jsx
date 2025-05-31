@@ -7,6 +7,7 @@ import useAuth from "../hooks/useAuth";
 import API from "../utils/api";
 import MovieFilterBar from "../components/MovieFilterBar";
 import Footer from "../components/Footer";
+import { motion } from "framer-motion";
 
 function WatchedListPage() {
   const { user, isLoading } = useAuth();
@@ -93,29 +94,31 @@ function WatchedListPage() {
     });
 
   return (
-    <div className="min-h-screen flex flex-col relative w-full overflow-x-hidden">
-      {/* 背景层 */}
+    <div className="flex flex-col min-h-screen w-full overflow-x-hidden relative">
+      {/* 背景图 */}
       <div
-        className="absolute inset-0 bg-cover bg-center"
+        className="absolute inset-0 bg-cover bg-top"
         style={{
           backgroundImage: "url('/reel_wall.jpg')",
           backgroundAttachment: "fixed",
+          backgroundSize: "cover",
+          backgroundPosition: "top",
         }}
       />
       <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent" />
-        <div className="absolute inset-0 bg-white/10 mix-blend-overlay" />
+        {/* ✅ 仅保留轻微暗角渐变，不含玻璃感 */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-transparent" />
       </div>
 
-      {/* 主内容区域 */}
-      <div className="relative z-10 flex-1">
+      {/* 内容区域，确保 Footer 被撑到底 */}
+      <div className="relative z-10 flex-grow text-white flex flex-col">
         <HeaderBar />
 
-        <div className="px-6 pt-8 max-w-screen-xl mx-auto">
+        <main className="flex-grow w-full max-w-screen-xl mx-auto px-4 sm:px-6 pt-8">
           <MovieFilterBar
             sortOption={sortOption}
             setSortOption={setSortOption}
-            filterOption={filterOption}
+            filterOption={filterOption ?? "all"}
             setFilterOption={setFilterOption}
             sortOptions={[
               { value: "added", label: "Sort by Added" },
@@ -130,30 +133,39 @@ function WatchedListPage() {
           />
 
           {sortedAndFiltered.length === 0 ? (
-            <p className="text-gray-100">No movies match your criteria.</p>
+            <p className="text-gray-100 mt-6">No movies match your criteria.</p>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-              {sortedAndFiltered.map((movie) => (
-                <MovieCard
-                  key={movie.title}
-                  movie={{ ...movie, mode: "watched" }}
-                  onClick={setSelectedMovie}
-                />
-              ))}
+            <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 justify-items-start">
+              {sortedAndFiltered.map((movie, index) =>
+                movie?.title ? (
+                  <motion.div
+                    key={movie.title}
+                    className="w-full max-w-[180px]"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    <MovieCard
+                      movie={{ ...movie, mode: "watched" }}
+                      onClick={setSelectedMovie}
+                    />
+                  </motion.div>
+                ) : null
+              )}
             </div>
           )}
-        </div>
-
-        <MovieModal
-          movie={selectedMovie}
-          onClose={() => setSelectedMovie(null)}
-          onReview={handleReview}
-          onDelete={handleDelete}
-        />
+        </main>
+        {selectedMovie && (
+          <MovieModal
+            movie={selectedMovie}
+            onClose={() => setSelectedMovie(null)}
+            onReview={handleReview}
+            onDelete={handleDelete}
+          />
+        )}
+        {/* 保证 Footer 始终可见 */}
+        <Footer />
       </div>
-
-      {/* Footer 固定在底部 */}
-      <Footer />
     </div>
   );
 }

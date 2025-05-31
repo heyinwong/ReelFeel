@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { FaBars, FaTimes } from "react-icons/fa";
+import { motion, AnimatePresence } from "framer-motion";
 import useAuth from "../hooks/useAuth";
 import ReelButton from "./ReelButton";
 
@@ -43,9 +44,18 @@ function HeaderBar({ className = "" }) {
           >
             ReelFeel
           </h1>
-          <p className="text-xs sm:text-sm text-white font-light italic sm:mt-1 leading-tight">
-            {getTagline()}
-          </p>
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={location.pathname}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.5 }}
+              className="text-xs sm:text-sm text-white font-light italic sm:mt-1 leading-tight"
+            >
+              {getTagline()}
+            </motion.p>
+          </AnimatePresence>
         </div>
 
         {/* Right: Navigation Buttons (Desktop) */}

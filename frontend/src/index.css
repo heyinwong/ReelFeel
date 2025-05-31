@@ -61,3 +61,15 @@ html,
 body {
   overflow-x: hidden;
 }
+
+/* global.css 中添加 */
+body {
+  scrollbar-gutter: stable;
+  overflow-y: scroll; /* 保持滚动条空间始终存在 */
+}
+
+/* 仅在支持 WebKit 的浏览器中隐藏实际滚动条视觉 */
+body::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}

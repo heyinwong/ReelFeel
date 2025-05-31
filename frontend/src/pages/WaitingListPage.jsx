@@ -8,6 +8,7 @@ import useAuth from "../hooks/useAuth";
 import API from "../utils/api";
 import Footer from "../components/Footer";
 import MovieFilterBar from "../components/MovieFilterBar";
+import { motion } from "framer-motion";
 
 function WaitingListPage() {
   const { user, isLoading } = useAuth();
@@ -63,10 +64,7 @@ function WaitingListPage() {
 
     if (movie.fromWaiting && hasReviewData) {
       try {
-        await API.post("/review", {
-          ...movie,
-          fromWaiting: true,
-        });
+        await API.post("/review", { ...movie, fromWaiting: true });
         await handleDelete(movie);
         toast.success("Moved to Watched");
       } catch (err) {
@@ -76,32 +74,27 @@ function WaitingListPage() {
     }
   };
 
-  const sorted = [...movies].sort((a, b) => {
-    if (sortOption === "title") {
-      return a.title.localeCompare(b.title);
-    }
-    return 0; // default to added order
-  });
+  const sorted = [...movies].sort((a, b) =>
+    sortOption === "title" ? a.title.localeCompare(b.title) : 0
+  );
 
   return (
-    <div className="flex flex-col min-h-screen w-full overflow-hidden">
-      {/* 背景图 + 滤镜 */}
+    <div className="w-full min-h-screen bg-black text-white flex flex-col relative overflow-hidden">
+      {/* 背景图 */}
       <div
-        className="absolute inset-0 bg-cover bg-center"
+        className="absolute inset-0 bg-cover bg-center z-0"
         style={{
           backgroundImage: "url('/theater.jpg')",
           backgroundAttachment: "fixed",
         }}
       />
-      <div className="absolute inset-0 bg-black/20 mix-blend-multiply pointer-events-none" />
-      <div className="absolute inset-0 -z-10 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent" />
-        <div className="absolute inset-0 bg-white/10 mix-blend-overlay" />
-      </div>
+      <div className="absolute inset-0 z-0 bg-black/40 pointer-events-none" />
 
-      <div className="relative z-10 flex-grow text-white">
+      {/* 主体内容 */}
+      <div className="relative z-10 flex flex-col flex-grow">
         <HeaderBar />
-        <div className="px-6 pt-8 max-w-screen-xl mx-auto">
+
+        <main className="flex-grow px-6 pt-8 max-w-screen-xl mx-auto w-full">
           <MovieFilterBar
             sortOption={sortOption}
             setSortOption={setSortOption}
@@ -115,29 +108,38 @@ function WaitingListPage() {
           />
 
           {sorted.length === 0 ? (
-            <p className="text-gray-200">Your watchlist is empty.</p>
+            <p className="text-gray-200 mt-6">Your watchlist is empty.</p>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-              {sorted.map((movie) => (
-                <MovieCard
-                  key={movie.title}
-                  movie={{ ...movie, mode: "waiting" }}
-                  onClick={setSelectedMovie}
-                />
-              ))}
+            <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 justify-items-start">
+              {sorted.map((movie, index) =>
+                movie?.title ? (
+                  <motion.div
+                    key={movie.title}
+                    className="w-full max-w-[180px]"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    <MovieCard
+                      movie={{ ...movie, mode: "waiting" }}
+                      onClick={setSelectedMovie}
+                    />
+                  </motion.div>
+                ) : null
+              )}
             </div>
           )}
-        </div>
+        </main>
+
+        <MovieModal
+          movie={selectedMovie}
+          onClose={() => setSelectedMovie(null)}
+          onReview={handleReview}
+          onDelete={handleDelete}
+        />
+
+        <Footer />
       </div>
-
-      <MovieModal
-        movie={selectedMovie}
-        onClose={() => setSelectedMovie(null)}
-        onReview={handleReview}
-        onDelete={handleDelete}
-      />
-
-      <Footer />
     </div>
   );
 }

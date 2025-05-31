@@ -25,7 +25,7 @@ function MovieModalBack({
   const isFromWaiting = movie.mode === "waiting";
 
   const renderStars = () => (
-    <div className="rating rating-md rating-half">
+    <div className="rating rating-md rating-half flex justify-center">
       {[1, 2, 3, 4, 5].flatMap((i) => {
         const halfVal = i * 2 - 1;
         const fullVal = i * 2;
@@ -56,15 +56,18 @@ function MovieModalBack({
   );
 
   return (
-    <div className="absolute inset-0 bg-[#281B13] text-[#F3E2D4] p-6 rounded-xl shadow-lg [backface-visibility:hidden] [transform:rotateY(180deg)]">
-      <h3 className="text-2xl font-semibold mb-6 text-center">Your Review</h3>
+    <div className="absolute inset-0 bg-[#281B13] text-[#F3E2D4] p-4 sm:p-6 overflow-y-auto max-h-[90vh] rounded-xl shadow-lg [backface-visibility:hidden] [transform:rotateY(180deg)]">
+      <h3 className="text-xl sm:text-2xl font-semibold mb-4 text-center">
+        Your Review
+      </h3>
 
-      <div className="flex flex-wrap justify-center gap-3 mb-6">
+      {/* Mood tags */}
+      <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-5">
         {moodOptions.map(({ emoji, tag }) => (
           <button
             key={tag}
             onClick={() => toggleMood(tag)}
-            className={`px-4 py-1.5 rounded-full border text-sm font-medium transition-all ${
+            className={`px-3 sm:px-4 py-1.5 rounded-full border text-sm font-medium transition-all ${
               selectedMoods.includes(tag)
                 ? "bg-[#FC7023] text-[#281B13] border-[#FC7023]"
                 : "border-[#FC7023]/50 text-[#F3E2D4]/80 hover:border-[#FC7023]"
@@ -75,6 +78,7 @@ function MovieModalBack({
         ))}
       </div>
 
+      {/* Watch date */}
       <div className="mb-4">
         <label className="block text-sm mb-1 font-semibold text-[#F3E2D4]">
           Watched on:
@@ -87,14 +91,16 @@ function MovieModalBack({
         />
       </div>
 
+      {/* Review textarea */}
       <textarea
-        className="w-full h-36 bg-[#281B13] border border-[#FC7023]/50 text-[#F3E2D4] rounded px-3 py-2 text-sm mb-6"
+        className="w-full h-36 bg-[#281B13] border border-[#FC7023]/50 text-[#F3E2D4] rounded px-3 py-2 text-sm mb-6 resize-none"
         value={review}
         onChange={(e) => setReview(e.target.value)}
         placeholder="Write what you felt..."
       />
 
-      <div className="flex items-center gap-4 justify-center mb-6">
+      {/* Rating + Like */}
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
         {renderStars()}
         <button
           className={`px-4 py-1.5 rounded-md text-sm font-medium shadow ${
@@ -108,10 +114,11 @@ function MovieModalBack({
         </button>
       </div>
 
-      <div className="flex justify-end gap-4 mt-4">
+      {/* Buttons */}
+      <div className="flex flex-col sm:flex-row justify-end gap-4 mt-4 text-sm">
         {onDelete && (
           <button
-            className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition"
+            className="w-full sm:w-auto px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition"
             onClick={() => {
               onDelete(movie);
               onClose();
@@ -121,14 +128,14 @@ function MovieModalBack({
           </button>
         )}
         <button
-          className="px-4 py-2 rounded-md bg-[#FC7023] text-[#281B13] font-semibold hover:bg-[#ff8c3a] transition"
+          className="w-full sm:w-auto px-4 py-2 rounded-md bg-[#FC7023] text-[#281B13] font-semibold hover:bg-[#ff8c3a] transition"
           onClick={onSave}
         >
           Save
         </button>
         {!isFromWaiting && (
           <button
-            className="px-4 py-2 rounded-md border border-[#F3E2D4]/50 text-[#F3E2D4] hover:bg-[#F3E2D4]/10"
+            className="w-full sm:w-auto px-4 py-2 rounded-md border border-[#F3E2D4]/50 text-[#F3E2D4] hover:bg-[#F3E2D4]/10 transition"
             onClick={onFlipBack}
           >
             ← Back

@@ -9,9 +9,10 @@ import UpdateSummaryModal from "../components/UpdateSummaryModal";
 import Footer from "../components/Footer";
 import toast from "react-hot-toast";
 import { ChevronUp, ChevronDown } from "lucide-react";
+import { motion } from "framer-motion";
 
 function DashboardPage() {
-  const { user, isLoading, logout } = useAuth();
+  const { user, isLoading } = useAuth();
   const [summary, setSummary] = useState("");
   const [snapshots, setSnapshots] = useState([]);
   const [showSummary, setShowSummary] = useState(false);
@@ -74,11 +75,12 @@ function DashboardPage() {
   if (isLoading) return <div className="p-6 text-center">Loading...</div>;
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#281B13] text-[#F3E2D4]">
+    <div className="min-h-screen flex flex-col bg-[#281B13] text-[#F3E2D4] overflow-x-hidden relative">
       <HeaderBar />
 
-      {/* 添加 flex-1 包住中间内容 */}
+      {/* 主内容区域 */}
       <div className="flex-1">
+        {/* 顶部背景图 */}
         <div className="relative">
           <img
             src="/cinema-paradiso-hero.jpg"
@@ -87,20 +89,40 @@ function DashboardPage() {
           />
           <div className="absolute inset-0 h-[600px] bg-gradient-to-b from-transparent to-[#281B13] z-10"></div>
 
-          <div className="relative z-20 max-w-4xl mx-auto text-center px-6 pt-20">
-            <h1 className="text-3xl sm:text-4xl font-bold mb-2">
+          <div className="relative z-20 max-w-4xl mx-auto text-center px-4 sm:px-6 pt-20">
+            <motion.h1
+              className="text-3xl sm:text-4xl font-extrabold mb-2 text-white drop-shadow-[0_3px_8px_rgba(0,0,0,0.85)]"
+              initial={{ opacity: 0, scale: 1.05, filter: "blur(2px)" }}
+              animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+              transition={{ duration: 1.2, ease: "easeOut" }}
+            >
               Your Taste Dashboard
-            </h1>
-            <p className="text-sm sm:text-base text-[#F3E2D4]/90 mb-6">
-              A reflection of your movie identity.
-            </p>
+            </motion.h1>
 
-            <h2 className="text-xl font-semibold mb-3 text-[#FC7023]">
+            <motion.p
+              className="text-sm sm:text-base text-white/90 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] mb-6"
+              initial={{ opacity: 0, y: -6, filter: "blur(1px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              transition={{ delay: 0.3, duration: 1 }}
+            >
+              A reflection of your movie identity.
+            </motion.p>
+
+            <motion.h2
+              className="text-xl font-semibold mb-3 text-[#FC7023]"
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.8 }}
+            >
               Current AI Summary
-            </h2>
+            </motion.h2>
 
             {!showSummary || !summary ? (
-              <div>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.7 }}
+              >
                 <button
                   className="bg-[#FC7023] hover:bg-orange-500 text-white px-4 py-2 rounded-md transition"
                   onClick={() => setShowSummary(true)}
@@ -113,27 +135,37 @@ function DashboardPage() {
                     Loading insights…
                   </p>
                 )}
-              </div>
+              </motion.div>
             ) : (
-              <div className="space-y-4 max-w-3xl mx-auto">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="space-y-4 max-w-3xl mx-auto p-4 sm:p-6 rounded-xl"
+              >
                 <TypingSummary text={summary.replace(/^The user/, "You")} />
                 {typingDone && (
-                  <div className="text-center">
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                    className="text-center"
+                  >
                     <button
                       className="text-[#FC7023] hover:underline text-sm"
                       onClick={() => setShowUpdateModal(true)}
                     >
                       I want to update AI
                     </button>
-                  </div>
+                  </motion.div>
                 )}
-              </div>
+              </motion.div>
             )}
           </div>
         </div>
 
-        {/* Snapshots Section */}
-        <div className="relative z-10 w-full px-6 py-12 max-w-3xl mx-auto overflow-x-hidden">
+        {/* Snapshot 区域 */}
+        <div className="relative z-10 w-full px-4 sm:px-6 py-12 max-w-3xl mx-auto overflow-x-hidden">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-[#FC7023]">
               Recent Snapshots
@@ -151,10 +183,17 @@ function DashboardPage() {
           </div>
 
           {showSnapshots && (
-            <SnapShotList
-              snapshots={snapshots}
-              onDelete={handleSnapshotDelete}
-            />
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="border-t border-[#FC7023]/30 pt-6"
+            >
+              <SnapShotList
+                snapshots={snapshots}
+                onDelete={handleSnapshotDelete}
+              />
+            </motion.div>
           )}
         </div>
       </div>

@@ -6,7 +6,7 @@ function MovieCard({ movie, onClick }) {
 
   return (
     <div
-      className="relative w-52 flex flex-col items-center overflow-hidden transform transition-transform duration-200 hover:scale-105 cursor-pointer"
+      className="relative w-full max-w-[180px] flex flex-col items-center overflow-hidden transform transition-transform duration-200 hover:scale-105 cursor-pointer"
       onClick={() => onClick && onClick(movie)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -14,7 +14,7 @@ function MovieCard({ movie, onClick }) {
     >
       {/* Film frame */}
       <div
-        className="relative w-48 h-72 bg-no-repeat bg-center bg-contain drop-shadow-lg"
+        className="relative w-full aspect-[2/3] bg-no-repeat bg-center bg-contain drop-shadow-lg"
         style={{ backgroundImage: "url('/poster.jpg')" }}
       >
         <img

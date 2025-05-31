@@ -1,6 +1,7 @@
 import { useState } from "react";
 import API from "../utils/api";
 import toast from "react-hot-toast";
+import { motion, AnimatePresence } from "framer-motion";
 
 function UpdateSummaryModal({ onClose, onUpdated }) {
   const [input, setInput] = useState("");
@@ -14,7 +15,7 @@ function UpdateSummaryModal({ onClose, onUpdated }) {
 
     setLoading(true);
     try {
-      const res = await API.post("/update_summary", { feedback: input });
+      await API.post("/update_summary", { feedback: input });
       toast.success("Summary updated.");
       onUpdated?.();
       onClose();
@@ -27,42 +28,51 @@ function UpdateSummaryModal({ onClose, onUpdated }) {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4"
-      onClick={onClose}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="bg-[#F3E2D4] text-[#281B13] rounded-xl w-full max-w-xl p-6 shadow-xl border border-[#dcc6b0] transition-all"
+    <AnimatePresence>
+      <motion.div
+        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4"
+        onClick={onClose}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
       >
-        <h2 className="text-lg sm:text-xl font-semibold mb-4 text-center">
-          Help us improve your AI summary
-        </h2>
+        <motion.div
+          onClick={(e) => e.stopPropagation()}
+          className="bg-[#F3E2D4] text-[#281B13] rounded-2xl w-full max-w-xl p-6 sm:p-8 shadow-2xl border border-[#e0d2c0]"
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+        >
+          <h2 className="text-center text-lg sm:text-xl font-semibold mb-5">
+            Let us fine-tune your taste profile
+          </h2>
 
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="e.g. I actually prefer comedies over drama."
-          className="w-full h-28 p-3 rounded-md border border-[#c9b7a2] bg-white text-sm text-[#281B13] placeholder:text-[#b79f89] focus:outline-none focus:ring-2 focus:ring-[#FC7023]/60 transition"
-        />
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="e.g. I actually prefer comedies over drama."
+            className="w-full h-28 sm:h-32 p-4 rounded-xl border border-[#d3bfa6] bg-white text-sm sm:text-base text-[#281B13] placeholder:text-[#b79f89] focus:outline-none focus:ring-2 focus:ring-[#FC7023]/60 transition"
+          />
 
-        <div className="mt-5 flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="px-4 py-1.5 rounded-md border border-[#b79f89] text-[#b79f89] hover:text-white hover:bg-[#b79f89] transition"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="px-4 py-1.5 rounded-md bg-[#FC7023] text-white hover:bg-orange-500 transition"
-          >
-            {loading ? "Updating..." : "Submit"}
-          </button>
-        </div>
-      </div>
-    </div>
+          <div className="mt-6 flex flex-col sm:flex-row justify-end sm:justify-between gap-3 sm:gap-4">
+            <button
+              onClick={onClose}
+              className="w-full sm:w-auto px-4 py-2 rounded-md border border-[#d6c3b0] text-[#a18469] hover:text-white hover:bg-[#a18469] transition text-sm"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={loading}
+              className="w-full sm:w-auto px-4 py-2 rounded-md bg-[#FC7023] text-white hover:bg-orange-500 transition text-sm"
+            >
+              {loading ? "Updating..." : "Submit"}
+            </button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 

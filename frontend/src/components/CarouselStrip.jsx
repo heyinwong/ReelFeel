@@ -20,11 +20,8 @@ function CarouselStrip({ movies, current, setCurrent, onCardClick }) {
   const handleTouchEnd = (e) => {
     if (touchStartX.current !== null) {
       const diff = e.changedTouches[0].clientX - touchStartX.current;
-      if (diff > 50) {
-        handlePrev();
-      } else if (diff < -50) {
-        handleNext();
-      }
+      if (diff > 50) handlePrev();
+      else if (diff < -50) handleNext();
       touchStartX.current = null;
     }
   };
@@ -39,7 +36,8 @@ function CarouselStrip({ movies, current, setCurrent, onCardClick }) {
 
   return (
     <div
-      className="relative w-full overflow-hidden h-60"
+      className="relative w-full overflow-hidden"
+      style={{ overflowY: "hidden", maxHeight: "15rem", height: "15rem" }} // h-60 = 15rem
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
@@ -89,6 +87,7 @@ function CarouselStrip({ movies, current, setCurrent, onCardClick }) {
                     src={movie.backdrop}
                     alt={movie.title}
                     className="w-full h-full object-cover rounded"
+                    style={{ maxHeight: "100%" }}
                   />
                 </div>
               </div>

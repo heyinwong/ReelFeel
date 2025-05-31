@@ -1,4 +1,3 @@
-// components/SnapShotList.js
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,8 +14,8 @@ function SnapShotList({ snapshots, onDelete }) {
   );
 
   return (
-    <div className="overflow-x-hidden">
-      <ul className="space-y-6 border-l border-[#FC7023]/40 pl-6 relative">
+    <div className="w-full max-w-full overflow-x-hidden">
+      <ul className="max-w-full space-y-6 border-l border-[#FC7023]/40 pl-8 relative">
         <AnimatePresence initial={false}>
           {sorted.map((s) => {
             const isCorrection = s.movie_id === null;
@@ -33,21 +32,21 @@ function SnapShotList({ snapshots, onDelete }) {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
-                className="relative group"
+                className="relative group max-w-full overflow-hidden"
               >
                 {/* Timeline Dot */}
-                <div className="absolute -left-[22px] top-1.5 w-3 h-3 rounded-full bg-[#FC7023] border border-[#F3E2D4]" />
+                <div className="absolute left-[-1.25rem] top-1.5 w-3 h-3 rounded-full bg-[#FC7023] border border-[#F3E2D4]" />
 
                 {/* Summary line */}
                 <div
-                  className="cursor-pointer text-sm text-[#F3E2D4] hover:text-[#FC7023] transition"
+                  className="cursor-pointer text-sm text-[#F3E2D4] hover:text-[#FC7023] transition max-w-full truncate"
                   onClick={() =>
                     setSelectedId((prev) => (prev === s.id ? null : s.id))
                   }
                 >
                   {new Date(s.timestamp).toLocaleDateString()} —{" "}
                   <span
-                    className={`inline-block px-2 py-0.5 rounded text-xs font-semibold text-white ${tagStyle}`}
+                    className={`inline-block max-w-[160px] truncate px-2 py-0.5 rounded text-xs font-semibold text-white ${tagStyle}`}
                   >
                     {tagText}
                   </span>
@@ -62,14 +61,16 @@ function SnapShotList({ snapshots, onDelete }) {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.25 }}
-                      className="bg-[#E9D6C5] text-[#281B13] mt-2 rounded-md p-4 text-sm leading-relaxed border border-[#dcc6b0]"
+                      className="bg-[#E9D6C5] text-[#281B13] mt-2 rounded-md p-4 text-sm leading-relaxed border border-[#dcc6b0] max-w-full overflow-hidden"
                     >
                       <div className="flex justify-between items-start">
-                        <p>{s.comment.replace(/^The user/, "You")}</p>
+                        <p className="pr-2 break-words">
+                          {s.comment.replace(/^The user/, "You")}
+                        </p>
                         {onDelete && (
                           <button
                             onClick={() => onDelete(s)}
-                            className="text-[#9e3b3b] hover:text-red-600 transition ml-4"
+                            className="text-[#9e3b3b] hover:text-red-600 transition ml-4 shrink-0"
                             title="Delete snapshot"
                           >
                             <Trash2 size={16} />

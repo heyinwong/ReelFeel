@@ -80,11 +80,11 @@ function MovieModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-2 sm:px-0"
       onClick={onClose}
     >
       <div
-        className="w-[90%] lg:w-[900px] max-h-[90vh] overflow-y-auto rounded-xl shadow-lg"
+        className="w-full max-w-[95vw] sm:max-w-[900px] max-h-[95vh] sm:max-h-[90vh] overflow-y-auto rounded-xl shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
         <motion.div
