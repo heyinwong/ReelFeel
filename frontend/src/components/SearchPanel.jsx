@@ -55,7 +55,6 @@ function SearchPanel({
           className="flex-1 h-[48px] px-4 bg-white text-[#281B13] placeholder:text-[#7a5c4a] border border-[#E95E1D] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E95E1D]/40 text-base"
         />
 
-        {/* 右侧按钮 */}
         {/* 右侧按钮（含 loading 状态） */}
         <button
           type="submit"
@@ -63,7 +62,7 @@ function SearchPanel({
           className={`w-[130px] h-[48px] rounded-md text-base font-semibold transition-all shadow flex items-center justify-center ${
             loading
               ? "bg-[#E95E1D]/60 cursor-not-allowed"
-              : "bg-[#E95E1D] text-white hover:bg-[#D94F13] active:scale-95"
+              : "bg-[#E95E1D] text-white hover:bg-[#D94F13] hover:scale-105 active:scale-95"
           }`}
         >
           {loading ? (
