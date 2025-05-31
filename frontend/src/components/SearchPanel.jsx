@@ -23,7 +23,7 @@ function SearchPanel({
     >
       <form
         onSubmit={onSubmit}
-        className="bg-[#fdf4e3]/70 backdrop-blur-md border border-[#fc7023]/20 p-6 rounded-xl shadow-lg max-w-3xl w-full flex gap-3 relative"
+        className="bg-[#fdf4e3]/70 backdrop-blur-md border border-[#fc7023]/20 p-6 rounded-xl shadow-lg max-w-3xl w-full flex flex-col sm:flex-row gap-3 relative"
       >
         {/* 左侧按钮 */}
         <button
@@ -31,15 +31,26 @@ function SearchPanel({
           onClick={onSwitchMode}
           onMouseEnter={() => setHovering(true)}
           onMouseLeave={() => setHovering(false)}
-          className="w-[130px] h-[48px] bg-[#281B13] text-[#F3E2D4] border border-[#A64816] rounded-md text-base font-semibold hover:bg-[#3a251a] hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2"
+          className="w-full sm:w-[130px] h-[48px] bg-[#281B13] text-[#F3E2D4] border border-[#A64816] rounded-md text-base font-semibold transition-all duration-200 flex items-center justify-center gap-2"
         >
-          {hovering ? (
-            <FiRepeat className="text-lg" />
-          ) : mode === "mood" ? (
-            "Roll the Reel"
-          ) : (
-            "Search"
-          )}
+          {/* 手机端：图标 + 标签 */}
+          <div className="flex flex-col items-center sm:hidden">
+            <FiRepeat className="text-xl" />
+            <span className="text-[11px] font-medium mt-1">
+              {mode === "mood" ? "Roll the Reel" : "Search"}
+            </span>
+          </div>
+
+          {/* 桌面端：完整文字 + 动画 */}
+          <span className="hidden sm:inline">
+            {hovering ? (
+              <FiRepeat className="text-lg" />
+            ) : mode === "mood" ? (
+              "Roll the Reel"
+            ) : (
+              "Search"
+            )}
+          </span>
         </button>
 
         {/* 输入框 */}
@@ -52,14 +63,13 @@ function SearchPanel({
               ? "e.g. Something nostalgic and heartwarming"
               : "e.g. Inception, Interstellar"
           }
-          className="flex-1 h-[48px] px-4 bg-white text-[#281B13] placeholder:text-[#7a5c4a] border border-[#E95E1D] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E95E1D]/40 text-base"
+          className="flex-1 w-full h-[58px] sm:h-[48px] px-5 text-[17px] sm:text-[16px] text-[#281B13] placeholder:text-[#7a5c4a] bg-white border border-[#E95E1D] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E95E1D]/40"
         />
 
-        {/* 右侧按钮（含 loading 状态） */}
         <button
           type="submit"
           disabled={loading}
-          className={`w-[130px] h-[48px] rounded-md text-base font-semibold transition-all shadow flex items-center justify-center ${
+          className={`h-[44px] sm:h-[48px] w-full sm:w-[130px] rounded-md text-base font-semibold transition-all shadow flex items-center justify-center ${
             loading
               ? "bg-[#E95E1D]/60 cursor-not-allowed"
               : "bg-[#E95E1D] text-white hover:bg-[#D94F13] hover:scale-105 active:scale-95"

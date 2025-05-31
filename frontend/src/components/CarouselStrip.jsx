@@ -46,7 +46,7 @@ function CarouselStrip({ movies, current, setCurrent, onCardClick }) {
       {/* 左按钮 */}
       <button
         onClick={handlePrev}
-        className="absolute left-1/2 -translate-x-[240px] top-1/2 -translate-y-1/2 z-10 text-xl text-white bg-black bg-opacity-30 hover:bg-opacity-60 hover:scale-105 rounded-full px-2 sm:px-3 py-1 transition-all"
+        className="absolute left-1/2 -translate-x-[240px] top-1/2 -translate-y-1/2 z-10 text-xl text-white bg-black bg-opacity-30 hover:bg-opacity-60 hover:scale-105 rounded-full px-2 sm:px-3 py-1 transition-all hidden sm:block"
       >
         ←
       </button>
@@ -54,7 +54,7 @@ function CarouselStrip({ movies, current, setCurrent, onCardClick }) {
       {/* 右按钮 */}
       <button
         onClick={handleNext}
-        className="absolute left-1/2 translate-x-[240px] top-1/2 -translate-y-1/2 z-10 text-xl text-white bg-black bg-opacity-30 hover:bg-opacity-60 hover:scale-105 rounded-full px-2 sm:px-3 py-1 transition-all"
+        className="absolute left-1/2 translate-x-[240px] top-1/2 -translate-y-1/2 z-10 text-xl text-white bg-black bg-opacity-30 hover:bg-opacity-60 hover:scale-105 rounded-full px-2 sm:px-3 py-1 transition-all hidden sm:block"
       >
         →
       </button>
@@ -71,12 +71,12 @@ function CarouselStrip({ movies, current, setCurrent, onCardClick }) {
             return (
               <div
                 key={movie.title + idx}
-                className={`transition-all duration-300 flex-shrink-0 w-full h-full px-2 flex justify-center items-center ${
+                className={`transition-all duration-300 flex-shrink-0 w-full h-full px-1 sm:px-2 flex justify-center items-center ${
                   isCenter ? "scale-105 z-10" : "scale-95 opacity-60"
                 }`}
               >
                 <div
-                  className="relative w-80 h-52 rounded-xl overflow-hidden shadow-md cursor-pointer hover:scale-[1.08] hover:shadow-2xl transition-all duration-300"
+                  className="relative h-52 w-[90%] sm:w-80 rounded-xl overflow-hidden shadow-md cursor-pointer hover:scale-[1.08] hover:shadow-2xl transition-all duration-300"
                   style={{
                     backgroundImage: "url('/card.jpg')",
                     backgroundSize: "cover",
