@@ -1,42 +1,55 @@
 # ReelFeel: AI-Powered Taste-Based Movie Recommender
 
-A full-stack personal project that explores how large language models (LLMs) can provide personalized movie recommendations and analysis based on a user's cinematic taste.
+A full-stack project that uses AI to understand your cinematic taste — not by genre or public rating, but by how you respond to films.
 
-##  Design Philosophy
+## Design Philosophy
 
-ReelFeel started as an exploration of how AI can make movie discovery feel more personal.  
-Rather than recommending what's trending or highly rated, it tries to understand the viewer’s taste based on what they’ve liked, rated, or written about.
+I’ve always watched films not just for fun, but for connection — to something quiet, emotional, or hard to explain.  
+Over time, I started logging what I watched, trying to understand why certain stories stayed with me. That reflection led to this project.
 
-The goal is not to build a perfect algorithm, but to create a space where recommendations feel more like reflections — grounded in your past experiences and emotional responses to films.
+ReelFeel is built around the idea that recommendations should begin with the viewer.  
+Instead of sorting by genre or popularity, it learns from how you react — what you rate, like, or write about.
 
-We chose to focus on simplicity:  
-- A clean UI that prioritizes what matters — your thoughts and your history  
-- A retro-inspired visual style to reflect the analog charm of cinema  
-- An evolving “taste model” built using snapshots of your interactions
-
-The system isn’t meant to be smarter than you — it’s meant to learn from you.
+I chose to use AI not just as a trend, but because I believe it's especially suited to understanding personal taste.  
+The system acts like an AI agent: observing how you respond to films and gradually forming a sense of your preferences based on your history snapshots.
 
 > In the end, ReelFeel is a small attempt to let AI assist in something very human: choosing a story that speaks to you.
 
 
 ## Features
 
-- Taste-based movie recommendation (GPT + TMDB API)
-- Secure user login and JWT authentication (FastAPI + bcrypt)
-- Watched list with rating, mood tagging, comment, and likes
-- Waiting list (To-Watch movies), with no duplicates across lists
-- Taste modeling agent: generates taste snapshots and summary using GPT
-- Dashboard-ready backend endpoints (`/taste-summary`, `/snapshot-history`)
+### Personalized AI Recommendation
+- Uses GPT + TMDB API to recommend movies based on user's taste profile
+- Avoids suggesting movies already in the user's history (watched/waiting lists)
+
+### Taste Modeling
+- Every time a user likes, rates, or reviews a movie, a “taste snapshot” is created
+- Snapshots are summarized into a long-term taste profile using GPT
+- These profiles drive future recommendations and provide transparent reasoning for each suggestion.
+
+### Interactive Movie Management
+- Can log movies to watched list with detailed user input: rating (1–10), moods, comments, likes
+- Waiting list (to-watch), with backend validation to avoid duplicates
+- Review interface supports seamless transition from waiting → watched
+
+### Authentication & Security
+- Login and registration system using FastAPI + JWT and bcrypt hashing
+
+### API-first Backend Design
+- Modular API endpoints for all operations: recommendation, snapshot, taste summary, list CRUD
+- Built with asynchronous FastAPI and SQLite, enabling smooth multi-user interaction
+
+---
 
 ## Tech Stack
 
-| Layer     | Technology                          |
-|----------|--------------------------------------|
-| Frontend | React, TailwindCSS, shadcn/ui        |
-| Backend  | FastAPI, SQLite, SQLAlchemy (async)  |
-| Auth     | JWT, bcrypt                          |
-| AI/ML    | OpenAI API (GPT), TMDB API           |
-| Design   | Retro film-style interface (custom)  |
+| Layer       | Technology                                                              |
+|-------------|-------------------------------------------------------------------------|
+| Frontend    | React (Vite), TailwindCSS, Framer Motion (animations)       |
+| Backend     | FastAPI, SQLite, Async SQLAlchemy, Pydantic                            |
+| Auth        | JWT (token-based auth), bcrypt (password hashing)                      |
+| AI Logic    | OpenAI(recommendation, taste modeling), TMDB API (movie data)   |
+| UI Design   | Retro film-inspired theme, responsive layout, animated components      |
 
 ## Getting Started
 
@@ -85,24 +98,28 @@ export MOVIE_PASS_KEY=your_jwt_secret_key
 
 ```
 /backend
-  ├── ai.py                 # GPT recommendation + taste modeling logic
-  ├── auth.py               # JWT auth logic
-  ├── base.py               # Utility functions
-  ├── database.py           # Async database setup
-  ├── main.py               # API endpoints
+  ├── ai.py                 # GPT taste modeling + movie recommendations
+  ├── auth.py               # JWT login/register logic
+  ├── database.py           # Async SQLite setup
   ├── models.py             # SQLAlchemy ORM models
-  └── app.db                # SQLite database
+  ├── main.py               # FastAPI routes
+  └── app.db                # Local SQLite database
 
 /frontend
-  ├── public/
-  ├── src/
-  │   ├── assets/           # Static assets
-  │   ├── components/       # Reusable UI components
-  │   ├── hooks/            # Custom React hooks
-  │   └── pages/            # Route-based page components
-  └── ...
+  ├── assets/               # Static assets
+  ├── components/           # Reusable UI elements
+  ├── hooks/                # Custom React hooks
+  └── pages/                # Route-level views (Main, Dashboard, etc.)
 ```
 
 ## Status
 
-This project is actively in development. All core backend functionality is complete. Frontend features, dashboard UI, and styling are being polished. An about page and final UI touches are planned.
+ReelFeel is in active development. All core features — including secure login, taste-based recommendation, and watchlist management — are complete. The app is fully responsive across devices and supports real-time taste modeling powered by GPT.
+
+**Upcoming improvements:**
+
+- Exclude movies already in the waiting list from AI recommendations  
+- Improve title matching accuracy to avoid wrong movie retrievals from TMDB  
+- Add subtle UI animations and polish  
+- Expand the Dashboard with more insights and interactive feedback  
+- Support for demo user access before final deployment
