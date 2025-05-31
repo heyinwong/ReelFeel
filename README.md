@@ -1,6 +1,6 @@
-# ReelFeel: A taste-based movie recommender web app powered by AI
+# ReelFeel: A Taste-Based Movie Recommender Web App Powered by AI
 
-A full-stack project that uses AI to understand your cinematic taste — not by genre or public rating, but by how you respond to films.
+A desktop-oriented full-stack application that uses AI to model and recommend films based on your unique viewing patterns and reflections.
 
 ## Design Philosophy
 
