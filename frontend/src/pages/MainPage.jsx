@@ -24,6 +24,7 @@ function MainPage() {
   const debounceRef = useRef(null);
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const recommendRef = useRef(null);
 
   const handleInputChange = (e) => {
     const value = e.target.value;
@@ -98,8 +99,13 @@ function MainPage() {
       setRecommendations([]);
     } finally {
       setLoading(false);
+      setIsSubmitting(false);
+
+      // ✅ 加这一段实现平滑滚动
+      setTimeout(() => {
+        recommendRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
     }
-    setIsSubmitting(false);
   };
 
   const handleSelectSuggestion = async (movie) => {
@@ -157,7 +163,10 @@ function MainPage() {
           onSelectSuggestion={handleSelectSuggestion}
         />
       </div>
-      <div className="px-4 w-full z-10 min-h-[300px] flex items-center justify-center">
+      <div
+        className="px-4 w-full z-10 min-h-[300px] flex items-center justify-center"
+        ref={recommendRef}
+      >
         {loading ? (
           <div className="flex flex-col items-center justify-center min-h-[220px] text-center px-4">
             <motion.div
@@ -178,13 +187,19 @@ function MainPage() {
             </motion.div>
           </div>
         ) : recommendations.length > 0 ? (
-          <RecommendBlock
-            mood={submittedMood}
-            recommendations={recommendations}
-            loading={false}
-            user={user}
-            onCardClick={setSelectedMovie}
-          />
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <RecommendBlock
+              mood={submittedMood}
+              recommendations={recommendations}
+              loading={false}
+              user={user}
+              onCardClick={setSelectedMovie}
+            />
+          </motion.div>
         ) : (
           <div className="flex flex-col items-center justify-center min-h-[220px] text-center px-4">
             <motion.h2
