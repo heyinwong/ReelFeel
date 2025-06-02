@@ -20,6 +20,7 @@ function DashboardPage() {
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [showSnapshots, setShowSnapshots] = useState(false);
+  const [highlightTitles, setHighlightTitles] = useState([]);
   const navigate = useNavigate();
 
   const fetchSummary = async () => {
@@ -27,6 +28,7 @@ function DashboardPage() {
       setSummaryLoading(true);
       const res = await API.get("/taste-summary");
       setSummary(res.data.summary || "");
+      setHighlightTitles(res.data.highlight_titles || []);
     } catch (err) {
       console.error("Error fetching summary:", err);
     } finally {
@@ -123,17 +125,31 @@ function DashboardPage() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.7 }}
               >
-                <button
-                  className="bg-[#FC7023] hover:bg-orange-500 text-white px-4 py-2 rounded-md transition"
-                  onClick={() => setShowSummary(true)}
-                  disabled={!summary || summaryLoading}
-                >
-                  See your AI insights
-                </button>
-                {!summary && summaryLoading && (
-                  <p className="text-sm text-gray-300 mt-2">
-                    Loading insights…
-                  </p>
+                {snapshots.length === 0 ? (
+                  <>
+                    <div className="inline-block px-6 py-3 rounded-lg bg-[#3a2a20]/80 text-white text-sm font-semibold shadow-inner border border-[#FC7023]/30 cursor-not-allowed select-none opacity-80">
+                      No insights yet
+                    </div>
+                    <p className="text-sm text-[#F3E2D4]/70 italic mt-3 tracking-wide">
+                      Add your first movie review to unlock personalized AI
+                      reflections.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      className="bg-[#FC7023] hover:bg-orange-500 text-white px-4 py-2 rounded-md transition"
+                      onClick={() => setShowSummary(true)}
+                      disabled={summaryLoading}
+                    >
+                      See your AI insights
+                    </button>
+                    {summaryLoading && (
+                      <p className="text-sm text-gray-300 mt-2">
+                        Loading insights…
+                      </p>
+                    )}
+                  </>
                 )}
               </motion.div>
             ) : (
@@ -143,7 +159,10 @@ function DashboardPage() {
                 transition={{ duration: 0.4 }}
                 className="space-y-4 max-w-3xl mx-auto p-4 sm:p-6 rounded-xl"
               >
-                <TypingSummary text={summary.replace(/^The user/, "You")} />
+                <TypingSummary
+                  text={summary.replace(/^The user/, "You")}
+                  highlightTitles={highlightTitles} // 正确拼写
+                />
                 {typingDone && (
                   <motion.div
                     initial={{ opacity: 0 }}

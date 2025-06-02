@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
 
-function TypingSummary({ text = "", onDone }) {
+function TypingSummary({ text = "", highlightTitles = [], onDone }) {
   const [displayed, setDisplayed] = useState("");
   const intervalRef = useRef(null);
 
@@ -23,17 +23,42 @@ function TypingSummary({ text = "", onDone }) {
     return () => clearInterval(intervalRef.current);
   }, [text, onDone]);
 
-  // 高亮电影名（用单引号包裹的部分）
-  const highlighted = displayed.split(/('.*?')/g).map((part, idx) => {
-    if (/^'.*'$/.test(part)) {
-      return (
-        <span key={idx} className="font-semibold italic text-[#FC7023]">
-          {part.replace(/'/g, "")}
-        </span>
+  // ✅ 精确高亮 highlightTitles 中的电影名（部分匹配也可以）
+  const highlighted = [];
+  let remaining = displayed;
+  let key = 0;
+
+  while (remaining.length > 0) {
+    let matchIndex = -1;
+    let matchedTitle = "";
+
+    for (const title of highlightTitles) {
+      const idx = remaining.toLowerCase().indexOf(title.toLowerCase());
+      if (idx !== -1 && (matchIndex === -1 || idx < matchIndex)) {
+        matchIndex = idx;
+        matchedTitle = title;
+      }
+    }
+
+    if (matchIndex === -1) {
+      highlighted.push(<span key={key++}>{remaining}</span>);
+      break;
+    }
+
+    if (matchIndex > 0) {
+      highlighted.push(
+        <span key={key++}>{remaining.slice(0, matchIndex)}</span>
       );
     }
-    return <span key={idx}>{part}</span>;
-  });
+
+    highlighted.push(
+      <span key={key++} className="font-semibold italic text-[#FC7023]">
+        {remaining.slice(matchIndex, matchIndex + matchedTitle.length)}
+      </span>
+    );
+
+    remaining = remaining.slice(matchIndex + matchedTitle.length);
+  }
 
   return (
     <motion.div

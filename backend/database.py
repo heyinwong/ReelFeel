@@ -44,7 +44,24 @@ async def add_to_watched(session: AsyncSession, movie_data: dict):
         )
     )
 
-    new_movie = WatchedMovie(**movie_data)
+    # Ensure all new fields are present
+    new_movie = WatchedMovie(
+        title=movie_data["title"],
+        poster=movie_data.get("poster"),
+        backdrop=movie_data.get("backdrop"),
+        tmdb_rating=movie_data.get("tmdb_rating"),
+        description=movie_data.get("description"),
+        user_rating=movie_data.get("user_rating"),
+        liked=movie_data.get("liked"),
+        review=movie_data.get("review"),
+        moods=movie_data.get("moods"),
+        watch_date=movie_data.get("watch_date"),
+        user_id=user_id,
+        tmdb_id=movie_data.get("tmdb_id"),
+        release_year=movie_data.get("release_year"),
+        genres=movie_data.get("genres"),
+        director=movie_data.get("director"),
+    )
     session.add(new_movie)
 
 # ---------- Waiting List ----------
@@ -77,7 +94,19 @@ async def add_to_waiting(session: AsyncSession, movie_data: dict):
     if existing_waiting.scalar():
         return
 
-    new_movie = WaitingMovie(**movie_data)
+    new_movie = WaitingMovie(
+        title=movie_data["title"],
+        poster=movie_data.get("poster"),
+        backdrop=movie_data.get("backdrop"),
+        tmdb_rating=movie_data.get("tmdb_rating"),
+        description=movie_data.get("description"),
+        user_id=user_id,
+        tmdb_id=movie_data.get("tmdb_id"),
+        release_year=movie_data.get("release_year"),
+        genres=movie_data.get("genres"),
+        director=movie_data.get("director"),
+        added_date=movie_data.get("added_date")  # Optional
+    )
     session.add(new_movie)
 
 # ---------- Move from Waiting → Watched ----------
@@ -112,6 +141,10 @@ async def move_to_watched(session: AsyncSession, movie_data: dict):
         "user_rating": movie_data.get("user_rating"),
         "liked": movie_data.get("liked", False),
         "review": movie_data.get("review", ""),
+        "tmdb_id": waiting_movie.tmdb_id,
+        "release_year": waiting_movie.release_year,
+        "genres": waiting_movie.genres,
+        "director": waiting_movie.director,
         "moods": ", ".join(movie_data.get("moods") or []) if isinstance(movie_data.get("moods"), list) else (movie_data.get("moods") or ""),
         "watch_date": datetime.strptime(movie_data["watch_date"], "%Y-%m-%d").date()
             if movie_data.get("watch_date")

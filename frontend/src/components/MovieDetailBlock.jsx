@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { FiZap } from "react-icons/fi"; // AI insight 图标
 
-function MovieDetailBlock({ movie, onAdd }) {
+function MovieDetailBlock({ movie, onAdd, mode }) {
   if (!movie) return null;
 
   return (
@@ -31,22 +31,36 @@ function MovieDetailBlock({ movie, onAdd }) {
       </p>
 
       {/* AI推荐理由 */}
-      {movie.reason && (
-        <motion.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
-          className="bg-[#fff3e6] border-l-4 border-[#FC7023] p-4 mb-6 rounded group hover:bg-[#ffeede] hover:shadow-inner transition-all duration-300"
-        >
-          <div className="flex items-center gap-2 text-xs font-semibold text-[#FC7023] mb-1">
-            <FiZap className="text-sm" />
-            AI Insight
-          </div>
-          <p className="text-sm italic text-[#4a3a30] leading-snug break-words overflow-wrap-anywhere">
-            {movie.reason}
-          </p>
-        </motion.div>
-      )}
+      {mode === "mood" &&
+        (movie.reason && movie.reason.trim() !== "" ? (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+            className="bg-[#fff3e6] border-l-4 border-[#FC7023] p-4 mb-6 rounded group hover:bg-[#ffeede] hover:shadow-inner transition-all duration-300"
+          >
+            <div className="flex items-center gap-2 text-xs font-semibold text-[#FC7023] mb-1">
+              <FiZap className="text-sm" />
+              AI Insight
+            </div>
+            <p className="text-sm italic text-[#4a3a30] leading-snug break-words overflow-wrap-anywhere">
+              {movie.reason}
+            </p>
+          </motion.div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+            className="flex items-start gap-2 text-sm text-[#7b6d63] italic mt-4 mb-6 px-4 py-3 rounded border-l-4 border-[#aaa] bg-[#f5f2ee]"
+          >
+            <FiZap className="mt-1 text-[#aaa]" />
+            <span>
+              Our AI is still learning your taste. Once you review a few movies,
+              personalized insights will appear here.
+            </span>
+          </motion.div>
+        ))}
 
       {/* 按钮区 */}
       <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-4">

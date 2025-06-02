@@ -6,7 +6,7 @@ import API from "../utils/api";
 import CarouselStrip from "./CarouselStrip";
 import MovieDetailBlock from "./MovieDetailBlock";
 
-function RecommendBlock({ recommendations, loading, user, onCardClick }) {
+function RecommendBlock({ recommendations, loading, user, onCardClick, mode }) {
   const [current, setCurrent] = useState(0);
   const navigate = useNavigate();
 
@@ -57,7 +57,8 @@ function RecommendBlock({ recommendations, loading, user, onCardClick }) {
       <MovieDetailBlock
         movie={recommendations[current]}
         user={user}
-        onAdd={handleAdd} // ✅ 修正这里
+        onAdd={handleAdd}
+        mode={mode}
       />
     </div>
   );

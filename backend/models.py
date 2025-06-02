@@ -18,6 +18,10 @@ class WatchedMovie(Base):
     watch_date = Column(Date, nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     user = relationship("User", back_populates="watched_movies")
+    tmdb_id = Column(Integer, nullable=True)
+    release_year = Column(Integer, nullable=True)
+    genres = Column(String, nullable=True)   # e.g., "Drama, Animation"
+    director = Column(String, nullable=True)
 
 class WaitingMovie(Base):
     __tablename__ = "waiting_movies"
@@ -31,6 +35,10 @@ class WaitingMovie(Base):
     added_date = Column(Date, nullable=True)  # 可以新增记录加入watchlist的时间（可选）
     user_id = Column(Integer, ForeignKey("users.id"))
     user = relationship("User", back_populates="waiting_movies")
+    tmdb_id = Column(Integer, nullable=True)
+    release_year = Column(Integer, nullable=True)
+    genres = Column(String, nullable=True)   # e.g., "Drama, Animation"
+    director = Column(String, nullable=True)
 
 
 class User(Base):
@@ -64,5 +72,5 @@ class TasteSummary(Base):
     user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     summary = Column(Text)
-
+    highlight_titles = Column(String, nullable=True)  # stored as JSON string
     user = relationship("User", back_populates="taste_summary")

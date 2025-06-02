@@ -11,26 +11,37 @@ from models import TasteSummary, TasteSnapshot
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 
-async def generate_snapshot_comment(movie_title, user_rating, review, mood_tags):
-    segments = []
+async def generate_snapshot_comment(
+    movie_title,
+    user_rating,
+    review,
+    mood_tags,
+    genres=None,
+    director=None,
+    release_year=None,
+):
+    bullet = []
 
     if user_rating:
-        segments.append(f"gave it a rating of {user_rating}")
+        bullet.append(f"You rated it {user_rating}/5.")
     if review:
-        segments.append(f"commented: \"{review}\"")
+        bullet.append(f"You wrote: \"{review}\"")
     if mood_tags:
-        mood_str = ", ".join(mood_tags) if isinstance(mood_tags, list) else mood_tags
-        segments.append(f"tagged your mood as: {mood_str}")
+        bullet.append(f"You tagged it with mood(s): {mood_tags}.")
+    if genres:
+        bullet.append(f"Its genres include: {genres}.")
+    if director:
+        bullet.append(f"It was directed by {director}.")
+    if release_year:
+        bullet.append(f"It was released in {release_year}.")
 
-    if not segments:
-        segments_text = "watched the movie but gave no specific input"
-    else:
-        segments_text = "; ".join(segments)
+    bullet_points = "\n".join(f"- {item}" for item in bullet) if bullet else "No personal input was provided."
 
     prompt = (
-        "You are an AI assistant giving personal feedback to the user based on their recent movie behavior.\n"
-        f"You watched '{movie_title}' and {segments_text}.\n"
-        "Write a short sentence (1–2 lines) addressing the user directly, describing what this says about your taste or preferences."
+        f"You are an AI assistant analyzing a user's recent film experience.\n"
+        f"The movie was '{movie_title}'. Here's what we know:\n{bullet_points}\n\n"
+        "Write a short (1–2 sentence) natural-sounding observation about what this movie choice and user behavior suggest about their personal film taste.\n"
+        "Use 'you' to refer to the user directly, and be thoughtful but not overly sentimental or artificial."
     )
 
     try:
@@ -42,8 +53,10 @@ async def generate_snapshot_comment(movie_title, user_rating, review, mood_tags)
         return response.choices[0].message.content.strip()
     except Exception as e:
         print("Error generating snapshot comment:", e)
-        return "Your behavior is unclear, but it may still reflect a unique taste."
+        return "You watched a movie, but we couldn't interpret your reaction clearly."
 
+
+import json
 
 async def regenerate_taste_summary(session: AsyncSession, user_id: int):
     result = await session.execute(
@@ -52,6 +65,24 @@ async def regenerate_taste_summary(session: AsyncSession, user_id: int):
         .order_by(TasteSnapshot.timestamp.asc())
     )
     snapshots = result.scalars().all()
+
+    if not snapshots:
+        # 无 snapshot，清空 summary
+        result = await session.execute(
+            select(TasteSummary).where(TasteSummary.user_id == user_id)
+        )
+        record = result.scalar_one_or_none()
+        if record:
+            record.summary = ""
+            record.highlight_titles = json.dumps([])
+        else:
+            session.add(TasteSummary(
+                user_id=user_id,
+                summary="",
+                highlight_titles=json.dumps([])
+            ))
+        await session.commit()
+        return
 
     user_insights = []
     behavior_observations = []
@@ -75,17 +106,19 @@ async def regenerate_taste_summary(session: AsyncSession, user_id: int):
         for obs in behavior_observations:
             behavior_observations_section += f"- {obs}\n"
 
-    # 构造 prompt
+    # 构造 GPT prompt
     prompt = (
         "You are an AI assistant helping a user understand their personal movie preferences.\n"
         "You've observed their reviews, moods, and direct feedback over time.\n\n"
         f"{user_insights_section}\n"
         f"{behavior_observations_section}\n"
-        "Now, write a short and thoughtful summary (3–5 sentences) that directly addresses the user (use 'you').\n"
-        "Prioritize and respect the user's explicit insights, integrating them naturally into your message.\n"
-        "The tone should be personal, warm, and perceptive — like someone who's been quietly observing and now offers gentle insights.\n"
-        "Avoid sounding overly poetic or robotic. You may reference 1–2 specific behaviors or movies, but don’t list them all.\n"
-        "Make it feel cohesive, grounded, and human."
+        "Now, do two things:\n"
+        "1. Write a thoughtful and cohesive summary (3–5 sentences) in a warm and perceptive tone. Use 'you' to address the user.\n"
+        "   Do NOT quote earlier text directly. Focus on patterns and preferences, not individual reviews.\n"
+        "2. Return a JSON object with two keys:\n"
+        "   - 'summary': your summary text\n"
+        "   - 'highlight_titles': an array of movie titles mentioned explicitly in the summary.\n"
+        "Format your entire output as a valid JSON object. Do not include any other commentary or formatting."
     )
 
     try:
@@ -94,18 +127,36 @@ async def regenerate_taste_summary(session: AsyncSession, user_id: int):
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
         )
-        summary = response.choices[0].message.content.strip()
-    except Exception as e:
-        print("Error during summary generation:", e)
-        summary = "Your profile could not be updated at the moment."
+        raw = response.choices[0].message.content.strip()
 
-    # 更新数据库
+        try:
+            parsed = json.loads(raw)
+            summary_text = parsed.get("summary", "").strip()
+            highlight_titles = parsed.get("highlight_titles", [])
+        except Exception as parse_err:
+            print("⚠️ Failed to parse JSON from GPT:", parse_err)
+            summary_text = raw
+            highlight_titles = []
+
+    except Exception as e:
+        print("❌ Error during summary generation:", e)
+        summary_text = "Your profile could not be updated at the moment."
+        highlight_titles = []
+
+    # ✅ 更新数据库
     result = await session.execute(
         select(TasteSummary).where(TasteSummary.user_id == user_id)
     )
     record = result.scalar_one_or_none()
     if record:
-        record.summary = summary
+        record.summary = summary_text
+        record.highlight_titles = json.dumps(highlight_titles)
     else:
-        session.add(TasteSummary(user_id=user_id, summary=summary))
+        session.add(TasteSummary(
+            user_id=user_id,
+            summary=summary_text,
+            highlight_titles=json.dumps(highlight_titles)
+        ))
+
+    await session.commit()
 

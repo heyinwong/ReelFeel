@@ -198,6 +198,7 @@ function MainPage() {
               loading={false}
               user={user}
               onCardClick={setSelectedMovie}
+              mode={mode}
             />
           </motion.div>
         ) : (

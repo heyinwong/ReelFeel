@@ -70,43 +70,102 @@ class AddMovieInput(BaseModel):
 class UpdateSummaryInput(BaseModel):
     feedback: str
 # ---------- TMDB Movie Info Helper ----------
-async def fetch_movie_info(title: str):
+def parse_title_and_year(raw_title):
+    match = re.match(r"(.+)\s+\((\d{4})\)", raw_title)
+    if match:
+        return match.group(1).strip(), int(match.group(2))
+    return raw_title.strip(), None
+
+async def fetch_movie_info(title: str, year_hint: int | None = None):
     api_key = os.getenv("TMDB_API_KEY")
-    url = f"https://api.themoviedb.org/3/search/movie?api_key={api_key}&query={title}"
+    base_url = "https://api.themoviedb.org/3"
+    search_url = f"{base_url}/search/movie"
+
+    params = {"api_key": api_key, "query": title}
+    if year_hint:
+        params["year"] = year_hint
 
     async with aiohttp.ClientSession() as session:
-        async with session.get(url) as resp:
+        async with session.get(search_url, params=params) as resp:
             if resp.status != 200:
-                raise HTTPException(status_code=500, detail="TMDB API Error")
-
+                raise HTTPException(status_code=500, detail="TMDB API search error")
             data = await resp.json()
-            if not data["results"]:
+            candidates = data.get("results", [])
+
+            filtered = []
+            for movie in candidates:
+                if not movie.get("poster_path") or movie.get("vote_count", 0) < 10:
+                    continue
+                try:
+                    year = int(movie.get("release_date", "0000")[:4])
+                except:
+                    year = 0
+                if year_hint and abs(year - year_hint) > 5:
+                    continue
+                filtered.append((movie, year))
+
+            if not filtered:
                 return {
                     "title": title,
                     "description": "Not found",
                     "poster": "",
                     "backdrop": "",
                     "tmdb_rating": None,
+                    "tmdb_id": None,
+                    "release_year": None,
+                    "genres": "",
+                    "director": "",
                 }
 
-            movie = data["results"][0]
-            return {
-                "title": movie["title"],
-                "description": movie.get("overview", "No description."),
-                "poster": f"https://image.tmdb.org/t/p/w500{movie['poster_path']}" if movie.get("poster_path") else "",
-                "backdrop": f"https://image.tmdb.org/t/p/w780{movie['backdrop_path']}" if movie.get("backdrop_path") else "",
-                "tmdb_rating": movie.get("vote_average"),
-            }
+            best_movie = sorted(
+                filtered,
+                key=lambda m: (m[0].get("vote_count", 0), m[0].get("popularity", 0)),
+                reverse=True
+            )[0][0]
+
+            movie_id = best_movie["id"]
+
+        # 获取 /movie/{id}
+        async with session.get(f"{base_url}/movie/{movie_id}", params={"api_key": api_key}) as detail_resp:
+            if detail_resp.status != 200:
+                raise HTTPException(status_code=500, detail="TMDB API detail error")
+            detail = await detail_resp.json()
+
+        # 获取 /movie/{id}/credits
+        async with session.get(f"{base_url}/movie/{movie_id}/credits", params={"api_key": api_key}) as credit_resp:
+            if credit_resp.status != 200:
+                raise HTTPException(status_code=500, detail="TMDB API credit error")
+            credits = await credit_resp.json()
+
+        # 提取导演
+        director = ""
+        for crew in credits.get("crew", []):
+            if crew.get("job") == "Director":
+                director = crew.get("name")
+                break
+
+        return {
+            "title": detail.get("title"),
+            "description": detail.get("overview", ""),
+            "poster": f"https://image.tmdb.org/t/p/w500{detail.get('poster_path')}" if detail.get("poster_path") else "",
+            "backdrop": f"https://image.tmdb.org/t/p/w780{detail.get('backdrop_path')}" if detail.get("backdrop_path") else "",
+            "tmdb_rating": detail.get("vote_average"),
+            "tmdb_id": movie_id,
+            "release_year": int(detail.get("release_date", "0000")[:4]) if detail.get("release_date") else None,
+            "genres": ", ".join([g["name"] for g in detail.get("genres", [])]),
+            "director": director,
+        }
 
 # ---------- Routes ----------
 @app.post("/recommend")
 async def recommend_movies(data: MoodInput, db: AsyncSession = Depends(get_db)):
     try:
-        # === 游客模式（无 user_id） ===
+        # === Guest Mode（No user_id） ===
         if data.user_id is None:
             prompt = (
-                f"Return ONLY a JSON array of 3 movie titles that match this mood: '{data.mood}'. "
-                "No explanation, no description, no year. Example: [\"Up\", \"La La Land\", \"Her\"]"
+                f"Return ONLY a JSON array of 3 movie titles that match user's input: '{data.mood}'. "
+                "Each item must include title and approximate release year. "
+                "Format: [\"Up (2009)\", \"La La Land (2016)\", \"Her (2013)\"]"
             )
 
             response = openai.chat.completions.create(
@@ -122,15 +181,16 @@ async def recommend_movies(data: MoodInput, db: AsyncSession = Depends(get_db)):
                 raise HTTPException(status_code=500, detail=f"Invalid JSON:\n{raw_content}")
 
             movie_details = []
-            for title in titles:
-                info = await fetch_movie_info(title)
+            for raw_title in titles:
+                title, year = parse_title_and_year(raw_title)
+                info = await fetch_movie_info(title, year)
                 if info:
-                    info["reason"] = ""  # 空理由
+                    info["reason"] = ""  # no insight in guest mode
                     movie_details.append(info)
 
             return {"recommendations": movie_details}
 
-        # === 登录用户完整逻辑 ===
+        # === Logged-in User Mode ===
         user_id = data.user_id
 
         watched_result = await db.execute(
@@ -138,18 +198,20 @@ async def recommend_movies(data: MoodInput, db: AsyncSession = Depends(get_db)):
         )
         watched_titles = [row[0] for row in watched_result.fetchall()]
 
-        waiting_titles = []
-        if data.mode == "include_waiting":
-            waiting_result = await db.execute(
-                select(WaitingMovie.title).where(WaitingMovie.user_id == user_id)
-            )
-            waiting_titles = [row[0] for row in waiting_result.fetchall()]
+        waiting_result = await db.execute(
+            select(WaitingMovie.title).where(WaitingMovie.user_id == user_id)
+        )
+        waiting_titles = [row[0] for row in waiting_result.fetchall()]
 
         summary_result = await db.execute(
             select(TasteSummary.summary).where(TasteSummary.user_id == user_id)
         )
-        taste_summary = summary_result.scalar() or "暂无用户画像。"
+        taste_summary = summary_result.scalar()
+        has_summary = bool(taste_summary and taste_summary.strip())
+        if not has_summary:
+            taste_summary = "User has no summary yet."
 
+        # --- Build prompt ---
         prompt = (
             f"You are a personalized movie recommender.\n"
             f"User's taste summary:\n{taste_summary}\n\n"
@@ -157,13 +219,23 @@ async def recommend_movies(data: MoodInput, db: AsyncSession = Depends(get_db)):
             f"Do NOT recommend these watched titles:\n{watched_titles}\n"
         )
         if waiting_titles:
-            prompt += f"Try to include or prioritize these waiting titles if relevant:\n{waiting_titles}\n"
+            prompt += f"Do NOT recommend these waiting titles:\n{waiting_titles}\n"
 
-        prompt += (
-            "Return a JSON array of 3 items, each containing a 'title' and a short 'reason'.\n"
-            "Example: [{\"title\": \"Inception\", \"reason\": \"You enjoy sci-fi mind-bending plots.\"}]\n"
-        )
+        if has_summary:
+            prompt += (
+                "Return a JSON array of 3 items. Each item must contain:\n"
+                "- 'title': movie title\n"
+                "- 'year': approximate release year\n"
+                "- 'reason': short reason for recommendation\n"
+                "Example: [{\"title\": \"Inception\", \"year\": 2010, \"reason\": \"You enjoy sci-fi mind-bending plots.\"}]\n"
+            )
+        else:
+            prompt += (
+                "Return a JSON array of 3 items. Each item must contain only 'title' and 'year'.\n"
+                "Do not include 'reason'. Example: [{\"title\": \"Inception\", \"year\": 2010}]\n"
+            )
 
+        # --- GPT call ---
         response = openai.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
@@ -179,8 +251,9 @@ async def recommend_movies(data: MoodInput, db: AsyncSession = Depends(get_db)):
         result = []
         for item in recommendations:
             title = item.get("title")
-            reason = item.get("reason", "")
-            info = await fetch_movie_info(title)
+            year = item.get("year")
+            reason = item.get("reason", "") if has_summary else ""
+            info = await fetch_movie_info(title, year)
             if info:
                 info["reason"] = reason
                 result.append(info)
@@ -206,10 +279,24 @@ async def get_taste_summary(user: User = Depends(get_current_user)):
             select(TasteSummary).where(TasteSummary.user_id == user.id)
         )
         summary = result.scalar_one_or_none()
+
         if summary:
-            return {"summary": summary.summary}
+            highlight_titles = []
+            if summary.highlight_titles:
+                try:
+                    highlight_titles = json.loads(summary.highlight_titles)
+                except Exception as e:
+                    print("Error decoding highlight_titles:", e)
+
+            return {
+                "summary": summary.summary,
+                "highlight_titles": highlight_titles
+            }
         else:
-            return {"summary": "No summary available yet."}
+            return {
+                "summary": "",
+                "highlight_titles": []
+            }
 
 @app.get("/snapshot-history")
 async def get_snapshot_history(user: User = Depends(get_current_user)):
@@ -379,7 +466,10 @@ async def process_taste_modeling(session, user, movie):
             movie_title=movie.title,
             user_rating=movie.user_rating,
             review=movie.review,
-            mood_tags=movie.moods
+            mood_tags=movie.moods,
+            genres=movie.genres,
+            director=movie.director,
+            release_year=movie.release_year
         )
 
         snapshot = TasteSnapshot(
