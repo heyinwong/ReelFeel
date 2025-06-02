@@ -8,6 +8,8 @@ function MovieModalBack({
   setLocalRating,
   localLiked,
   setLocalLiked,
+  localDisliked,
+  setLocalDisliked,
   review,
   setReview,
   selectedMoods,
@@ -99,19 +101,40 @@ function MovieModalBack({
         placeholder="Write what you felt..."
       />
 
-      {/* Rating + Like */}
+      {/* Rating + Like + Dislike */}
       <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
         {renderStars()}
-        <button
-          className={`px-4 py-1.5 rounded-md text-sm font-medium shadow ${
-            localLiked
-              ? "bg-[#FC7023] text-[#281B13]"
-              : "border border-[#FC7023] text-[#FC7023]"
-          }`}
-          onClick={() => setLocalLiked((prev) => !prev)}
-        >
-          {localLiked ? "♥ Liked" : "♡ Like"}
-        </button>
+        <div className="flex gap-3">
+          <button
+            className={`px-4 py-1.5 rounded-md text-sm font-medium shadow ${
+              localLiked
+                ? "bg-[#FC7023] text-[#281B13]"
+                : "border border-[#FC7023] text-[#FC7023]"
+            }`}
+            onClick={() => {
+              const newLiked = !localLiked;
+              setLocalLiked(newLiked);
+              if (newLiked) setLocalDisliked(false);
+            }}
+          >
+            {localLiked ? "♥ Liked" : "♡ Like"}
+          </button>
+
+          <button
+            className={`px-4 py-1.5 rounded-md text-sm font-medium shadow ${
+              localDisliked
+                ? "bg-red-600 text-white"
+                : "border border-red-600 text-red-600"
+            }`}
+            onClick={() => {
+              const newDisliked = !localDisliked;
+              setLocalDisliked(newDisliked);
+              if (newDisliked) setLocalLiked(false);
+            }}
+          >
+            {localDisliked ? "👎 Disliked" : "👎 Dislike"}
+          </button>
+        </div>
       </div>
 
       {/* Buttons */}

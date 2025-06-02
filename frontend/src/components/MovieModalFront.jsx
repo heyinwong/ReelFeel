@@ -26,6 +26,27 @@ function MovieModalFront({ movie, onFlip, readOnly }) {
           <p className="text-sm sm:text-base leading-relaxed text-[#F3E2D4]/90">
             {movie.description || "No description available."}
           </p>
+          {/* 补充信息：导演、年份、类型 */}
+          <div className="mt-4 text-sm sm:text-base text-[#F3E2D4]/80 space-y-1">
+            {movie.release_year && (
+              <p>
+                <strong className="text-[#FC7023]">Year:</strong>{" "}
+                {movie.release_year}
+              </p>
+            )}
+            {movie.director && (
+              <p>
+                <strong className="text-[#FC7023]">Director:</strong>{" "}
+                {movie.director}
+              </p>
+            )}
+            {movie.genres && (
+              <p>
+                <strong className="text-[#FC7023]">Genres:</strong>{" "}
+                {movie.genres}
+              </p>
+            )}
+          </div>
         </div>
 
         {isWatched && (

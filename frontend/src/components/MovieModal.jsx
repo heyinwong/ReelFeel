@@ -20,6 +20,7 @@ function MovieModal({
   const [review, setReview] = useState("");
   const [selectedMoods, setSelectedMoods] = useState([]);
   const [watchDate, setWatchDate] = useState("");
+  const [localDisliked, setLocalDisliked] = useState(false);
 
   useEffect(() => {
     if (movie) {
@@ -28,6 +29,7 @@ function MovieModal({
       setReview(movie.review || "");
       setSelectedMoods(movie.moods || []);
       setWatchDate(movie.watch_date || "");
+      setLocalDisliked(movie.disliked || false);
     }
   }, [movie]);
 
@@ -62,6 +64,7 @@ function MovieModal({
       ...movie,
       user_rating: localRating,
       liked: localLiked,
+      disliked: localDisliked,
       review,
       moods: selectedMoods,
       watch_date: watchDate,
@@ -109,6 +112,8 @@ function MovieModal({
               setLocalRating={setLocalRating}
               localLiked={localLiked}
               setLocalLiked={setLocalLiked}
+              localDisliked={localDisliked}
+              setLocalDisliked={setLocalDisliked}
               review={review}
               setReview={setReview}
               selectedMoods={selectedMoods}

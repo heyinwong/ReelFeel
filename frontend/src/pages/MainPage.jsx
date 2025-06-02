@@ -91,6 +91,10 @@ function MainPage() {
         poster: movie.poster || "",
         backdrop: movie.backdrop || "",
         reason: movie.reason || "",
+        release_year: movie.release_year || null,
+        genres: movie.genres || "",
+        director: movie.director || "",
+        tmdb_id: movie.tmdb_id || null,
       }));
 
       setRecommendations(normalized);
@@ -113,23 +117,26 @@ function MainPage() {
     setSuggestions([]);
     setInput(movie.title);
     try {
-      const res = await API.get("/movie_by_title", {
-        params: { title: movie.title },
-      });
-      const data = res.data;
-      const result = data.recommendations || [];
+      const res = await API.get(`/movie_by_title`); // ✅ 正确写法
+      const movieData = res.data;
 
-      const normalized = result.map((movie) => ({
-        title: movie.title,
-        description: movie.description || "No description available.",
-        tmdb_rating: movie.tmdb_rating || "N/A",
-        poster: movie.poster || "",
-        backdrop: movie.backdrop || "",
-      }));
+      const normalized = [
+        {
+          title: movieData.title,
+          description: movieData.description || "No description available.",
+          tmdb_rating: movieData.tmdb_rating ?? "N/A",
+          poster: movieData.poster || "",
+          backdrop: movieData.backdrop || "",
+          release_year: movieData.release_year || null,
+          genres: movieData.genres || "",
+          director: movieData.director || "",
+          tmdb_id: movieData.tmdb_id || null,
+        },
+      ];
 
       setRecommendations(normalized);
     } catch (err) {
-      console.error("Failed to fetch movie detail by title", err);
+      console.error("Failed to fetch movie detail by ID", err);
       setRecommendations([]);
     }
   };

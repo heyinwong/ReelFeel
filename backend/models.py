@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Text, DateTime, func
+from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Text, DateTime, Boolean,func
 from base import Base
 from sqlalchemy.orm import relationship
 
@@ -22,6 +22,7 @@ class WatchedMovie(Base):
     release_year = Column(Integer, nullable=True)
     genres = Column(String, nullable=True)   # e.g., "Drama, Animation"
     director = Column(String, nullable=True)
+    disliked = Column(Boolean, default=False)
 
 class WaitingMovie(Base):
     __tablename__ = "waiting_movies"

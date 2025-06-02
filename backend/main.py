@@ -6,6 +6,7 @@ from auth import get_current_user
 from models import User
 from fastapi import Depends
 import openai
+import re
 import os
 import json
 import asyncio
@@ -66,6 +67,9 @@ class AddMovieInput(BaseModel):
     backdrop: str
     tmdb_rating: float | None = None
     description: str
+    release_year: int | None = None
+    genres: str | None = ""
+    director: str | None = ""
 
 class UpdateSummaryInput(BaseModel):
     feedback: str
@@ -75,6 +79,7 @@ def parse_title_and_year(raw_title):
     if match:
         return match.group(1).strip(), int(match.group(2))
     return raw_title.strip(), None
+
 
 async def fetch_movie_info(title: str, year_hint: int | None = None):
     api_key = os.getenv("TMDB_API_KEY")
@@ -92,19 +97,7 @@ async def fetch_movie_info(title: str, year_hint: int | None = None):
             data = await resp.json()
             candidates = data.get("results", [])
 
-            filtered = []
-            for movie in candidates:
-                if not movie.get("poster_path") or movie.get("vote_count", 0) < 10:
-                    continue
-                try:
-                    year = int(movie.get("release_date", "0000")[:4])
-                except:
-                    year = 0
-                if year_hint and abs(year - year_hint) > 5:
-                    continue
-                filtered.append((movie, year))
-
-            if not filtered:
+            if not candidates:
                 return {
                     "title": title,
                     "description": "Not found",
@@ -117,33 +110,45 @@ async def fetch_movie_info(title: str, year_hint: int | None = None):
                     "director": "",
                 }
 
-            best_movie = sorted(
-                filtered,
-                key=lambda m: (m[0].get("vote_count", 0), m[0].get("popularity", 0)),
-                reverse=True
-            )[0][0]
+            # 🎯 筛选年份匹配 ±5 的候选
+            filtered = []
+            for movie in candidates:
+                try:
+                    year = int(movie.get("release_date", "0000")[:4])
+                except:
+                    year = 0
+                if year_hint and abs(year - year_hint) > 5:
+                    continue
+                if not movie.get("poster_path") or movie.get("vote_count", 0) < 10:
+                    continue
+                filtered.append((movie, year))
+
+            # ✅ 使用 filtered，如果没有就 fallback 用 candidates
+            best_movie = None
+            if filtered:
+                best_movie = sorted(
+                    filtered,
+                    key=lambda m: (m[0].get("vote_count", 0), m[0].get("popularity", 0)),
+                    reverse=True
+                )[0][0]
+            else:
+                best_movie = candidates[0]
 
             movie_id = best_movie["id"]
 
-        # 获取 /movie/{id}
+        # 🔍 获取 /movie/{id}
         async with session.get(f"{base_url}/movie/{movie_id}", params={"api_key": api_key}) as detail_resp:
             if detail_resp.status != 200:
                 raise HTTPException(status_code=500, detail="TMDB API detail error")
             detail = await detail_resp.json()
 
-        # 获取 /movie/{id}/credits
+        # 🎬 获取 /movie/{id}/credits（拿导演）
         async with session.get(f"{base_url}/movie/{movie_id}/credits", params={"api_key": api_key}) as credit_resp:
             if credit_resp.status != 200:
                 raise HTTPException(status_code=500, detail="TMDB API credit error")
             credits = await credit_resp.json()
 
-        # 提取导演
-        director = ""
-        for crew in credits.get("crew", []):
-            if crew.get("job") == "Director":
-                director = crew.get("name")
-                break
-
+        director = next((c["name"] for c in credits.get("crew", []) if c.get("job") == "Director"), None)
         return {
             "title": detail.get("title"),
             "description": detail.get("overview", ""),
@@ -252,6 +257,8 @@ async def recommend_movies(data: MoodInput, db: AsyncSession = Depends(get_db)):
         for item in recommendations:
             title = item.get("title")
             year = item.get("year")
+            if not isinstance(year, int):
+                year = None
             reason = item.get("reason", "") if has_summary else ""
             info = await fetch_movie_info(title, year)
             if info:
@@ -261,6 +268,7 @@ async def recommend_movies(data: MoodInput, db: AsyncSession = Depends(get_db)):
         return {"recommendations": result}
 
     except Exception as e:
+        print("[recommend top-level error]:", repr(e))
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -525,39 +533,47 @@ async def search_suggestions(query: str = Query(..., min_length=1)):
 @app.post("/search")
 async def search_movies(data: MoodInput):
     """
-    接收关键词并返回最多 3 个匹配电影的完整信息
+    接收关键词并返回最多 3 个匹配电影的完整信息（通过 fetch_movie_info 获取）
     """
-    query = data.mood
+    query = data.mood  # 复用 MoodInput 的字段作为搜索关键词
 
     try:
         api_key = os.getenv("TMDB_API_KEY")
-        url = f"https://api.themoviedb.org/3/search/movie?api_key={api_key}&query={query}&language=en-US&include_adult=false&page=1"
+        url = f"https://api.themoviedb.org/3/search/movie"
+        params = {
+            "api_key": api_key,
+            "query": query,
+            "language": "en-US",
+            "page": 1,
+        }
 
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url)
-            response.raise_for_status()
-            data = response.json()
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, params=params) as resp:
+                if resp.status != 200:
+                    raise HTTPException(status_code=500, detail="TMDB search failed")
+                data = await resp.json()
 
         results = data.get("results", [])[:3]
         if not results:
             return {"recommendations": []}
 
-        # 利用 fetch_movie_info 获取完整详情（但你可以选用更轻量方式）
-        # 也可以直接在这里统一字段名，避免前端再判断
-        recommendations = [
-            {
-                "title": movie.get("title", "Unknown"),
-                "description": movie.get("overview", "No description."),
-                "poster": f"https://image.tmdb.org/t/p/w500{movie['poster_path']}" if movie.get("poster_path") else "",
-                "backdrop": f"https://image.tmdb.org/t/p/w780{movie['backdrop_path']}" if movie.get("backdrop_path") else "",
-                "tmdb_rating": movie.get("vote_average", "N/A"),
-            }
-            for movie in results
-        ]
+        # 用 fetch_movie_info 精确提取完整字段（含导演、类型等）
+        full_infos = []
+        for movie in results:
+            title = movie.get("title")
+            release_date = movie.get("release_date", "")
+            year_hint = int(release_date[:4]) if release_date else None
 
-        return {"recommendations": recommendations}
+            try:
+                info = await fetch_movie_info(title, year_hint=year_hint)
+                full_infos.append(info)
+            except Exception as e:
+                print(f"[search] failed to fetch detail for {title}: {e}")
+
+        return {"recommendations": full_infos}
 
     except Exception as e:
+        print(f"[search top-level error]: {e}")
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
 @app.get("/movie_by_title")
