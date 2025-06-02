@@ -29,18 +29,18 @@ async def add_to_watched(session: AsyncSession, movie_data: dict):
     title = movie_data["title"]
 
     existing = await session.execute(
-        select(WatchedMovie).where(
-            WatchedMovie.user_id == user_id,
-            WatchedMovie.title == title
-        )
+    select(WatchedMovie).where(
+        WatchedMovie.user_id == user_id,
+        WatchedMovie.tmdb_id == movie_data["tmdb_id"]
     )
+)
     if existing.scalar():
         return
 
     await session.execute(
-        delete(WaitingMovie).where(
-            WaitingMovie.user_id == user_id,
-            WaitingMovie.title == title
+    delete(WaitingMovie).where(
+        WaitingMovie.user_id == user_id,
+        WaitingMovie.tmdb_id == movie_data["tmdb_id"]
         )
     )
 
@@ -77,20 +77,20 @@ async def add_to_waiting(session: AsyncSession, movie_data: dict):
     title = movie_data["title"]
 
     existing_watched = await session.execute(
-        select(WatchedMovie).where(
-            WatchedMovie.user_id == user_id,
-            WatchedMovie.title == title
-        )
+    select(WatchedMovie).where(
+        WatchedMovie.user_id == user_id,
+        WatchedMovie.tmdb_id == movie_data["tmdb_id"]
     )
+)
     if existing_watched.scalar():
         return
 
     existing_waiting = await session.execute(
-        select(WaitingMovie).where(
-            WaitingMovie.user_id == user_id,
-            WaitingMovie.title == title
-        )
+    select(WaitingMovie).where(
+        WaitingMovie.user_id == user_id,
+        WaitingMovie.tmdb_id == movie_data["tmdb_id"]
     )
+)
     if existing_waiting.scalar():
         return
 
@@ -115,21 +115,21 @@ async def move_to_watched(session: AsyncSession, movie_data: dict):
     title = movie_data["title"]
 
     result = await session.execute(
-        select(WaitingMovie).where(
-            WaitingMovie.user_id == user_id,
-            WaitingMovie.title == title
-        )
+    select(WaitingMovie).where(
+        WaitingMovie.user_id == user_id,
+        WaitingMovie.tmdb_id == movie_data["tmdb_id"]
     )
+)
     waiting_movie = result.scalar_one_or_none()
     if not waiting_movie:
         return
 
     await session.execute(
-        delete(WaitingMovie).where(
-            WaitingMovie.user_id == user_id,
-            WaitingMovie.title == title
-        )
+    delete(WaitingMovie).where(
+        WaitingMovie.user_id == user_id,
+        WaitingMovie.tmdb_id == movie_data["tmdb_id"]
     )
+)
 
     full_data = {
         "user_id": waiting_movie.user_id,
@@ -152,11 +152,11 @@ async def move_to_watched(session: AsyncSession, movie_data: dict):
     }
 
     existing = await session.execute(
-        select(WatchedMovie).where(
-            WatchedMovie.user_id == user_id,
-            WatchedMovie.title == title
-        )
+    select(WatchedMovie).where(
+        WatchedMovie.user_id == user_id,
+        WatchedMovie.tmdb_id == movie_data["tmdb_id"]
     )
+)
     if existing.scalar():
         return
 
