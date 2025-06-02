@@ -113,11 +113,19 @@ function MainPage() {
   };
 
   const handleSelectSuggestion = async (movie) => {
+    console.log("Selected suggestion object:", movie);
+
+    if (!movie || !movie.id) {
+      console.warn("Invalid movie suggestion. No TMDB ID found.");
+      return;
+    }
+
     setSelectedSuggestion(movie);
     setSuggestions([]);
     setInput(movie.title);
+
     try {
-      const res = await API.get(`/movie_by_title`); // ✅ 正确写法
+      const res = await API.get(`/movie_detail/${movie.id}`);
       const movieData = res.data;
 
       const normalized = [

@@ -23,10 +23,8 @@ function MovieModalBack({
   setWatchDate,
   isSaving,
 }) {
-  const isFromWaiting = movie.mode === "waiting";
-
   const renderStars = () => (
-    <div className="rating rating-md rating-half flex justify-center">
+    <div className="rating rating-md rating-half flex justify-start w-full">
       {[1, 2, 3, 4, 5].flatMap((i) => {
         const halfVal = i * 2 - 1;
         const fullVal = i * 2;
@@ -58,20 +56,21 @@ function MovieModalBack({
 
   return (
     <div className="absolute inset-0 bg-[#281B13] text-[#F3E2D4] p-6 overflow-y-auto max-h-[90vh] rounded-xl shadow-lg [backface-visibility:hidden] [transform:rotateY(180deg)]">
-      <h3 className="text-2xl font-semibold mb-6 text-center">Your Review</h3>
+      <h3 className="text-2xl font-semibold mb-5 text-center">Your Review</h3>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+      <div className="flex flex-col lg:flex-row gap-6 items-start justify-between">
         {/* Left Section */}
-        <div className="flex flex-col items-center gap-4">
+        <div className="flex flex-col gap-3 w-full lg:w-1/2 pl-6">
           <div className="w-full max-w-xs">
-            <label className="block text-sm mb-1 font-semibold">Moods:</label>
+            <label className="block text-lg mb-1 font-semibold">Moods:</label>
             <MoodSelector
               selectedMoods={selectedMoods}
               toggleMood={toggleMood}
             />
           </div>
+
           <div className="w-full max-w-xs">
-            <label className="block text-sm mb-1 font-semibold">
+            <label className="block text-lg mb-1 font-semibold">
               Watched on:
             </label>
             <DatePicker
@@ -86,9 +85,9 @@ function MovieModalBack({
             />
           </div>
 
-          <div className="mt-2">{renderStars()}</div>
+          {renderStars()}
 
-          <div className="flex gap-4 mt-2">
+          <div className="flex gap-3">
             <button
               className={`px-4 py-1.5 rounded-full text-sm font-medium shadow transition-transform duration-200 hover:scale-105 ${
                 localLiked
@@ -121,11 +120,14 @@ function MovieModalBack({
           </div>
         </div>
 
+        {/* Divider */}
+        <div className="hidden lg:block w-[2px] bg-[#FC7023]/50 h-full rounded mx-8" />
+
         {/* Right Section */}
-        <div className="flex flex-col gap-4 w-full">
+        <div className="flex flex-col w-full lg:w-1/2 gap-2">
           <label className="text-lg font-semibold">Your Thoughts:</label>
           <textarea
-            className="w-full h-60 bg-[#281B13] border border-[#FC7023]/50 text-[#F3E2D4] rounded px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#FC7023]"
+            className="h-40 bg-[#281B13] border border-[#FC7023]/50 text-[#F3E2D4] rounded px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#FC7023]"
             value={review}
             onChange={(e) => setReview(e.target.value)}
             placeholder="Write what you felt..."
@@ -133,8 +135,15 @@ function MovieModalBack({
         </div>
       </div>
 
+      {/* Tagline */}
+      <div className="mt-6 text-center">
+        <p className="text-sm text-[#F3E2D4]/70 italic">
+          Every scene leaves a mark. Make yours memorable.
+        </p>
+      </div>
+
       {/* Bottom Buttons */}
-      <div className="flex justify-center gap-6 mt-8">
+      <div className="flex justify-center gap-4 mt-6 pt-4 border-t border-[#FC7023]/30">
         {onDelete && (
           <button
             className="px-6 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition hover:scale-[1.05]"
@@ -152,14 +161,12 @@ function MovieModalBack({
         >
           {isSaving ? "Saving..." : "Save"}
         </button>
-        {!isFromWaiting && (
-          <button
-            className="px-6 py-2 rounded-md border border-[#F3E2D4]/50 text-[#F3E2D4] hover:bg-[#F3E2D4]/10 transition hover:scale-[1.05]"
-            onClick={onFlipBack}
-          >
-            ← Back
-          </button>
-        )}
+        <button
+          className="px-6 py-2 rounded-md border border-[#F3E2D4]/50 text-[#F3E2D4] hover:bg-[#F3E2D4]/10 transition hover:scale-[1.05]"
+          onClick={onFlipBack}
+        >
+          ← Back
+        </button>
       </div>
     </div>
   );

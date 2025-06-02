@@ -80,7 +80,41 @@ def parse_title_and_year(raw_title):
         return match.group(1).strip(), int(match.group(2))
     return raw_title.strip(), None
 
+async def get_movie_detail_by_id(tmdb_id: int):
+    import os
+    import aiohttp
+    from fastapi import HTTPException
 
+    api_key = os.getenv("TMDB_API_KEY")
+    base_url = "https://api.themoviedb.org/3"
+
+    async with aiohttp.ClientSession() as session:
+        # 获取电影详情
+        async with session.get(f"{base_url}/movie/{tmdb_id}", params={"api_key": api_key}) as detail_resp:
+            if detail_resp.status != 200:
+                raise HTTPException(status_code=500, detail="TMDB API detail error")
+            detail = await detail_resp.json()
+
+        # 获取导演
+        async with session.get(f"{base_url}/movie/{tmdb_id}/credits", params={"api_key": api_key}) as credit_resp:
+            if credit_resp.status != 200:
+                raise HTTPException(status_code=500, detail="TMDB API credit error")
+            credits = await credit_resp.json()
+
+        director = next((c["name"] for c in credits.get("crew", []) if c.get("job") == "Director"), None)
+
+        return {
+            "title": detail.get("title"),
+            "description": detail.get("overview", ""),
+            "poster": f'https://image.tmdb.org/t/p/w500{detail.get("poster_path")}' if detail.get("poster_path") else "",
+            "backdrop": f'https://image.tmdb.org/t/p/w780{detail.get("backdrop_path")}' if detail.get("backdrop_path") else "",
+            "tmdb_rating": detail.get("vote_average"),
+            "tmdb_id": tmdb_id,
+            "release_year": int(detail.get("release_date", "0000")[:4]) if detail.get("release_date") else None,
+            "genres": ", ".join([g["name"] for g in detail.get("genres", [])]),
+            "director": director,
+        }
+    
 async def fetch_movie_info(title: str, year_hint: int | None = None):
     api_key = os.getenv("TMDB_API_KEY")
     base_url = "https://api.themoviedb.org/3"
@@ -498,9 +532,6 @@ async def process_taste_modeling(session, user, movie):
 @app.get("/search_suggestions")
 async def search_suggestions(query: str = Query(..., min_length=1)):
     api_key = os.getenv("TMDB_API_KEY")
-    """
-    提供实时搜索建议：返回与关键词匹配的最多 5 部电影（标题 + 海报路径 + ID）
-    """
     url = "https://api.themoviedb.org/3/search/movie"
     params = {
         "api_key": api_key,
@@ -519,14 +550,22 @@ async def search_suggestions(query: str = Query(..., min_length=1)):
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
     results = data.get("results", [])[:5]
-    suggestions = [
-        {
-            "id": movie["id"],
-            "title": movie["title"],
-            "poster": f"https://image.tmdb.org/t/p/w185{movie['poster_path']}" if movie.get("poster_path") else "",
-        }
-        for movie in results if movie.get("title")
-    ]
+    suggestions = []
+
+    for movie in results:
+        title = movie.get("title")
+        release_date = movie.get("release_date", "")
+        year_hint = int(release_date[:4]) if release_date else None
+
+        try:
+            info = await fetch_movie_info(title, year_hint=year_hint)
+            suggestions.append({
+    "id": info.get("tmdb_id"),
+    "title": info.get("title"),
+    "poster": info.get("poster")
+})
+        except Exception as e:
+            print(f"[suggestion fallback] failed for {title}: {e}")
 
     return {"suggestions": suggestions}
 
@@ -652,3 +691,11 @@ async def update_taste_summary_feedback(
         except Exception as e:
             print("❌ COMMIT ERROR:", e)
             raise HTTPException(status_code=500, detail="Failed to update summary")
+        
+@app.get("/movie_detail/{tmdb_id}")
+async def movie_detail(tmdb_id: int):
+    try:
+        return await get_movie_detail_by_id(tmdb_id)
+    except Exception as e:
+        print(f"[movie_detail] Failed to fetch: {e}")
+        return JSONResponse(content={"error": str(e)}, status_code=500)
