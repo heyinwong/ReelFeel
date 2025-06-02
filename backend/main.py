@@ -553,19 +553,18 @@ async def search_suggestions(query: str = Query(..., min_length=1)):
     suggestions = []
 
     for movie in results:
+        movie_id = movie.get("id")
         title = movie.get("title")
-        release_date = movie.get("release_date", "")
-        year_hint = int(release_date[:4]) if release_date else None
+        poster_path = movie.get("poster_path")
 
-        try:
-            info = await fetch_movie_info(title, year_hint=year_hint)
-            suggestions.append({
-    "id": info.get("tmdb_id"),
-    "title": info.get("title"),
-    "poster": info.get("poster")
-})
-        except Exception as e:
-            print(f"[suggestion fallback] failed for {title}: {e}")
+        if not title or not movie_id:
+            continue
+
+        suggestions.append({
+            "id": movie_id,
+            "title": title,
+            "poster": f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else ""
+        })
 
     return {"suggestions": suggestions}
 
