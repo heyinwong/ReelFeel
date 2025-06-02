@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 
 const defaultMoodOptions = [
   { emoji: "😭", tag: "Moved" },
@@ -19,67 +19,52 @@ function MoodSelector({
   moodOptions = defaultMoodOptions,
 }) {
   const [open, setOpen] = useState(false);
-  const containerRef = useRef(null);
-
-  // 点击外部时自动关闭
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   return (
-    <div className="relative inline-block w-full" ref={containerRef}>
+    <>
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => setOpen(true)}
         className="px-4 py-2 border border-[#FC7023] rounded-md text-sm font-medium text-[#F3E2D4] bg-transparent hover:bg-[#FC7023]/10 transition"
       >
         + Select Moods ▾
       </button>
 
-      {selectedMoods.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-2 text-sm">
-          {selectedMoods.map((tag) => {
-            const emoji = moodOptions.find((m) => m.tag === tag)?.emoji;
-            return (
-              <span
-                key={tag}
-                className="bg-[#FC7023] text-[#281B13] px-2 py-0.5 rounded-full"
-              >
-                {emoji} {tag}
-              </span>
-            );
-          })}
-        </div>
-      )}
-
       {open && (
-        <div className="absolute z-20 mt-2 bg-[#281B13] border border-[#FC7023] rounded-lg p-3 shadow-lg w-full max-w-md">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {moodOptions.map(({ emoji, tag }) => {
-              const selected = selectedMoods.includes(tag);
-              return (
-                <button
-                  key={tag}
-                  onClick={() => toggleMood(tag)}
-                  className={`px-2 py-1 rounded-full border text-sm font-medium transition-all ${
-                    selected
-                      ? "bg-[#FC7023] text-[#281B13] border-[#FC7023]"
-                      : "border-[#FC7023]/50 text-[#F3E2D4]/80 hover:border-[#FC7023] hover:text-[#F3E2D4]"
-                  }`}
-                >
-                  {emoji} {tag}
-                </button>
-              );
-            })}
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-center items-center px-4">
+          <div className="bg-[#281B13] border border-[#FC7023] rounded-xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-[#F3E2D4]">
+                Select Your Moods
+              </h3>
+              <button
+                onClick={() => setOpen(false)}
+                className="text-[#FC7023] text-xl hover:scale-110 transition"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {moodOptions.map(({ emoji, tag }) => {
+                const selected = selectedMoods.includes(tag);
+                return (
+                  <button
+                    key={tag}
+                    onClick={() => toggleMood(tag)}
+                    className={`px-3 py-2 rounded-full border text-sm font-medium transition-all ${
+                      selected
+                        ? "bg-[#FC7023] text-[#281B13] border-[#FC7023]"
+                        : "border-[#FC7023]/50 text-[#F3E2D4]/80 hover:border-[#FC7023] hover:text-[#F3E2D4]"
+                    }`}
+                  >
+                    {emoji} {tag}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
