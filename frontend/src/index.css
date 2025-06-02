@@ -73,3 +73,46 @@ body::-webkit-scrollbar {
   width: 0px;
   background: transparent;
 }
+.react-datepicker__input-container input {
+  background-color: #281b13;
+  color: #f3e2d4;
+  border: 1px solid #fc7023;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  border-radius: 0.5rem;
+  width: 100%;
+}
+
+.react-datepicker {
+  background-color: #281b13;
+  border: 1px solid #fc7023;
+  border-radius: 0.75rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.react-datepicker__header {
+  background-color: #281b13;
+  border-bottom: 1px solid #fc7023;
+}
+
+.react-datepicker__current-month,
+.react-datepicker-time__header,
+.react-datepicker-year-header {
+  color: #f3e2d4;
+}
+
+.react-datepicker__day,
+.react-datepicker__day-name {
+  color: #f3e2d4;
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  background-color: #fc7023;
+  color: #281b13;
+}
+
+.react-datepicker__day:hover {
+  background-color: #fc7023;
+  color: #281b13;
+}

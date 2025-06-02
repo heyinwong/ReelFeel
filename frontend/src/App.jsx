@@ -6,7 +6,7 @@ import WaitingListPage from "./pages/WaitingListPage";
 import DashboardPage from "./pages/DashboardPage";
 import AboutPage from "./pages/AboutPage";
 import { Toaster } from "react-hot-toast";
-
+import "react-datepicker/dist/react-datepicker.css";
 function App() {
   return (
     <Router>

@@ -1,3 +1,8 @@
+import React from "react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import MoodSelector from "./MoodSelector";
+
 function MovieModalBack({
   movie,
   onClose,
@@ -16,14 +21,8 @@ function MovieModalBack({
   toggleMood,
   watchDate,
   setWatchDate,
+  isSaving,
 }) {
-  const moodOptions = [
-    { emoji: "😭", tag: "Moved" },
-    { emoji: "😂", tag: "Hilarious" },
-    { emoji: "🤔", tag: "Thoughtful" },
-    { emoji: "💖", tag: "Heartwarming" },
-    { emoji: "✨", tag: "Beautiful" },
-  ];
   const isFromWaiting = movie.mode === "waiting";
 
   const renderStars = () => (
@@ -36,7 +35,7 @@ function MovieModalBack({
             key={`half-${i}`}
             type="radio"
             name={`rating-${movie.title}`}
-            className="mask mask-star-2 mask-half-1 bg-yellow-400"
+            className="mask mask-star-2 mask-half-1 bg-yellow-400 hover:scale-110 transition-transform duration-150"
             aria-label={`${i - 0.5} star`}
             checked={localRating === halfVal}
             onClick={() => setLocalRating(halfVal)}
@@ -46,7 +45,7 @@ function MovieModalBack({
             key={`full-${i}`}
             type="radio"
             name={`rating-${movie.title}`}
-            className="mask mask-star-2 mask-half-2 bg-yellow-400"
+            className="mask mask-star-2 mask-half-2 bg-yellow-400 hover:scale-110 transition-transform duration-150"
             aria-label={`${i} star`}
             checked={localRating === fullVal}
             onClick={() => setLocalRating(fullVal)}
@@ -58,90 +57,87 @@ function MovieModalBack({
   );
 
   return (
-    <div className="absolute inset-0 bg-[#281B13] text-[#F3E2D4] p-4 sm:p-6 overflow-y-auto max-h-[90vh] rounded-xl shadow-lg [backface-visibility:hidden] [transform:rotateY(180deg)]">
-      <h3 className="text-xl sm:text-2xl font-semibold mb-4 text-center">
-        Your Review
-      </h3>
+    <div className="absolute inset-0 bg-[#281B13] text-[#F3E2D4] p-6 overflow-y-auto max-h-[90vh] rounded-xl shadow-lg [backface-visibility:hidden] [transform:rotateY(180deg)]">
+      <h3 className="text-2xl font-semibold mb-6 text-center">Your Review</h3>
 
-      {/* Mood tags */}
-      <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-5">
-        {moodOptions.map(({ emoji, tag }) => (
-          <button
-            key={tag}
-            onClick={() => toggleMood(tag)}
-            className={`px-3 sm:px-4 py-1.5 rounded-full border text-sm font-medium transition-all ${
-              selectedMoods.includes(tag)
-                ? "bg-[#FC7023] text-[#281B13] border-[#FC7023]"
-                : "border-[#FC7023]/50 text-[#F3E2D4]/80 hover:border-[#FC7023]"
-            }`}
-          >
-            {emoji} {tag}
-          </button>
-        ))}
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        {/* Left Section */}
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-full max-w-xs">
+            <label className="block text-sm mb-1 font-semibold">Moods:</label>
+            <MoodSelector
+              selectedMoods={selectedMoods}
+              toggleMood={toggleMood}
+            />
+          </div>
+          <div className="w-full max-w-xs">
+            <label className="block text-sm mb-1 font-semibold">
+              Watched on:
+            </label>
+            <DatePicker
+              selected={watchDate ? new Date(watchDate) : null}
+              onChange={(date) =>
+                setWatchDate(date ? date.toISOString().split("T")[0] : "")
+              }
+              className="bg-[#281B13] border border-[#FC7023]/50 text-[#F3E2D4] rounded w-full px-3 py-2 text-sm"
+              placeholderText="Select a date"
+              dateFormat="yyyy-MM-dd"
+              showPopperArrow={false}
+            />
+          </div>
 
-      {/* Watch date */}
-      <div className="mb-4">
-        <label className="block text-sm mb-1 font-semibold text-[#F3E2D4]">
-          Watched on:
-        </label>
-        <input
-          type="date"
-          value={watchDate}
-          onChange={(e) => setWatchDate(e.target.value)}
-          className="bg-[#281B13] border border-[#FC7023]/50 text-[#F3E2D4] rounded w-full px-3 py-2 text-sm"
-        />
-      </div>
+          <div className="mt-2">{renderStars()}</div>
 
-      {/* Review textarea */}
-      <textarea
-        className="w-full h-36 bg-[#281B13] border border-[#FC7023]/50 text-[#F3E2D4] rounded px-3 py-2 text-sm mb-6 resize-none"
-        value={review}
-        onChange={(e) => setReview(e.target.value)}
-        placeholder="Write what you felt..."
-      />
+          <div className="flex gap-4 mt-2">
+            <button
+              className={`px-4 py-1.5 rounded-full text-sm font-medium shadow transition-transform duration-200 hover:scale-105 ${
+                localLiked
+                  ? "bg-[#FC7023] text-[#281B13]"
+                  : "border border-[#FC7023] text-[#FC7023] hover:bg-[#FC7023]/10"
+              }`}
+              onClick={() => {
+                const newLiked = !localLiked;
+                setLocalLiked(newLiked);
+                if (newLiked) setLocalDisliked(false);
+              }}
+            >
+              {localLiked ? "♥ Liked" : "♡ Like"}
+            </button>
 
-      {/* Rating + Like + Dislike */}
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
-        {renderStars()}
-        <div className="flex gap-3">
-          <button
-            className={`px-4 py-1.5 rounded-md text-sm font-medium shadow ${
-              localLiked
-                ? "bg-[#FC7023] text-[#281B13]"
-                : "border border-[#FC7023] text-[#FC7023]"
-            }`}
-            onClick={() => {
-              const newLiked = !localLiked;
-              setLocalLiked(newLiked);
-              if (newLiked) setLocalDisliked(false);
-            }}
-          >
-            {localLiked ? "♥ Liked" : "♡ Like"}
-          </button>
+            <button
+              className={`px-4 py-1.5 rounded-full text-sm font-medium shadow transition-transform duration-200 hover:scale-105 ${
+                localDisliked
+                  ? "bg-red-600 text-white"
+                  : "border border-red-600 text-red-600 hover:bg-red-600/10"
+              }`}
+              onClick={() => {
+                const newDisliked = !localDisliked;
+                setLocalDisliked(newDisliked);
+                if (newDisliked) setLocalLiked(false);
+              }}
+            >
+              {localDisliked ? "👎 Disliked" : "👎 Dislike"}
+            </button>
+          </div>
+        </div>
 
-          <button
-            className={`px-4 py-1.5 rounded-md text-sm font-medium shadow ${
-              localDisliked
-                ? "bg-red-600 text-white"
-                : "border border-red-600 text-red-600"
-            }`}
-            onClick={() => {
-              const newDisliked = !localDisliked;
-              setLocalDisliked(newDisliked);
-              if (newDisliked) setLocalLiked(false);
-            }}
-          >
-            {localDisliked ? "👎 Disliked" : "👎 Dislike"}
-          </button>
+        {/* Right Section */}
+        <div className="flex flex-col gap-4 w-full">
+          <label className="text-lg font-semibold">Your Thoughts:</label>
+          <textarea
+            className="w-full h-60 bg-[#281B13] border border-[#FC7023]/50 text-[#F3E2D4] rounded px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#FC7023]"
+            value={review}
+            onChange={(e) => setReview(e.target.value)}
+            placeholder="Write what you felt..."
+          />
         </div>
       </div>
 
-      {/* Buttons */}
-      <div className="flex flex-col sm:flex-row justify-end gap-4 mt-4 text-sm">
+      {/* Bottom Buttons */}
+      <div className="flex justify-center gap-6 mt-8">
         {onDelete && (
           <button
-            className="w-full sm:w-auto px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition"
+            className="px-6 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition hover:scale-[1.05]"
             onClick={() => {
               onDelete(movie);
               onClose();
@@ -151,14 +147,14 @@ function MovieModalBack({
           </button>
         )}
         <button
-          className="w-full sm:w-auto px-4 py-2 rounded-md bg-[#FC7023] text-[#281B13] font-semibold hover:bg-[#ff8c3a] transition"
+          className="px-6 py-2 rounded-md bg-[#FC7023] text-[#281B13] font-semibold hover:bg-[#ff8c3a] transition hover:scale-[1.05]"
           onClick={onSave}
         >
-          Save
+          {isSaving ? "Saving..." : "Save"}
         </button>
         {!isFromWaiting && (
           <button
-            className="w-full sm:w-auto px-4 py-2 rounded-md border border-[#F3E2D4]/50 text-[#F3E2D4] hover:bg-[#F3E2D4]/10 transition"
+            className="px-6 py-2 rounded-md border border-[#F3E2D4]/50 text-[#F3E2D4] hover:bg-[#F3E2D4]/10 transition hover:scale-[1.05]"
             onClick={onFlipBack}
           >
             ← Back
