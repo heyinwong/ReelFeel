@@ -30,35 +30,75 @@ function MovieDetailBlock({ movie, onAdd, mode }) {
         {movie.description}
       </p>
 
-      {/* AI推荐理由 */}
       {mode === "mood" &&
         (movie.reason && movie.reason.trim() !== "" ? (
           <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.5 }}
-            className="bg-[#fff3e6] border-l-4 border-[#FC7023] p-4 mb-6 rounded group hover:bg-[#ffeede] hover:shadow-inner transition-all duration-300"
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{
+              duration: 0.5,
+              type: "spring",
+              stiffness: 80,
+              damping: 12,
+              delay: 0.3,
+            }}
+            className="relative bg-[#fdf4ed] border border-dashed border-[#FC7023]/60 rounded-[18px] px-6 pt-6 pb-4 mt-6 mb-8 shadow-sm"
           >
-            <div className="flex items-center gap-2 text-xs font-semibold text-[#FC7023] mb-1">
-              <FiZap className="text-sm" />
+            {/* AI Insight 角标 */}
+            <motion.div
+              initial={{ x: -10, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.3 }}
+              className="absolute -top-3 left-0 bg-[#FC7023] text-[#281B13] text-xs font-bold px-3 py-1 rounded-br-xl rounded-tl-lg tracking-wide shadow-md"
+            >
+              <FiZap className="inline-block mr-1 -mt-0.5" />
               AI Insight
-            </div>
-            <p className="text-sm italic text-[#4a3a30] leading-snug break-words overflow-wrap-anywhere">
+            </motion.div>
+
+            {/* 推荐理由内容 */}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6, duration: 0.4 }}
+              className="text-sm sm:text-base italic text-[#4b3a2f] leading-relaxed mt-2"
+            >
               {movie.reason}
-            </p>
+            </motion.p>
           </motion.div>
         ) : (
           <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.5 }}
-            className="flex items-start gap-2 text-sm text-[#7b6d63] italic mt-4 mb-6 px-4 py-3 rounded border-l-4 border-[#aaa] bg-[#f5f2ee]"
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{
+              duration: 0.5,
+              type: "spring",
+              stiffness: 80,
+              damping: 12,
+              delay: 0.3,
+            }}
+            className="relative bg-[#f5f2ee] border border-dashed border-[#aaa]/40 rounded-[18px] px-6 pt-6 pb-4 mt-6 mb-8 shadow-sm"
           >
-            <FiZap className="mt-1 text-[#aaa]" />
-            <span>
+            {/* Fallback 角标 */}
+            <motion.div
+              initial={{ x: -10, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.3 }}
+              className="absolute -top-3 left-0 bg-[#aaa] text-white text-xs font-bold px-3 py-1 rounded-br-xl rounded-tl-lg tracking-wide shadow"
+            >
+              <FiZap className="inline-block mr-1 -mt-0.5" />
+              AI Insight
+            </motion.div>
+
+            {/* 提示文字 */}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6, duration: 0.4 }}
+              className="text-sm sm:text-base italic text-[#4a3a30]/70 leading-relaxed mt-2"
+            >
               Our AI is still learning your taste. Once you review a few movies,
               personalized insights will appear here.
-            </span>
+            </motion.p>
           </motion.div>
         ))}
 
