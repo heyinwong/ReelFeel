@@ -10,11 +10,13 @@ import Footer from "../components/Footer";
 import toast from "react-hot-toast";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
+import TasteCharts from "../components/TasteCharts";
 
 function DashboardPage() {
   const { user, isLoading } = useAuth();
   const [summary, setSummary] = useState("");
   const [snapshots, setSnapshots] = useState([]);
+  const [watched, setWatched] = useState([]);
   const [showSummary, setShowSummary] = useState(false);
   const [typingDone, setTypingDone] = useState(false);
   const [summaryLoading, setSummaryLoading] = useState(false);
@@ -45,8 +47,17 @@ function DashboardPage() {
     }
   };
 
+  const fetchWatched = async () => {
+    try {
+      const res = await API.get("/watched-list");
+      setWatched(res.data.movies || []);
+    } catch (err) {
+      console.error("Error fetching watched list:", err);
+    }
+  };
+
   const refreshDashboard = async () => {
-    await Promise.all([fetchSummary(), fetchSnapshots()]);
+    await Promise.all([fetchSummary(), fetchSnapshots(), fetchWatched()]);
   };
 
   useEffect(() => {
@@ -161,7 +172,7 @@ function DashboardPage() {
               >
                 <TypingSummary
                   text={summary.replace(/^The user/, "You")}
-                  highlightTitles={highlightTitles} // 正确拼写
+                  highlightTitles={highlightTitles}
                 />
                 {typingDone && (
                   <motion.div
@@ -181,6 +192,11 @@ function DashboardPage() {
               </motion.div>
             )}
           </div>
+        </div>
+
+        {/* Taste Charts 区域 */}
+        <div className="relative z-10 w-full px-4 sm:px-6 pt-8 max-w-6xl mx-auto">
+          <TasteCharts watched={watched} />
         </div>
 
         {/* Snapshot 区域 */}

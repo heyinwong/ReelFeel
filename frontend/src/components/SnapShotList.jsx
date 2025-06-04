@@ -19,10 +19,6 @@ function SnapShotList({ snapshots, onDelete }) {
         <AnimatePresence initial={false}>
           {sorted.map((s) => {
             const isCorrection = s.movie_id === null;
-            const tagText = isCorrection
-              ? "User"
-              : s.comment.match(/'(.*?)'/)?.[1] || "Movie";
-            const tagStyle = isCorrection ? "bg-[#b85e2e]" : "bg-[#FC7023]";
             const isSelected = s.id === selectedId;
 
             return (
@@ -39,16 +35,18 @@ function SnapShotList({ snapshots, onDelete }) {
 
                 {/* Summary line */}
                 <div
-                  className="cursor-pointer text-sm text-[#F3E2D4] hover:text-[#FC7023] transition max-w-full truncate"
+                  className="cursor-pointer text-sm text-[#F3E2D4] hover:text-[#FC7023] transition flex items-center gap-2"
                   onClick={() =>
                     setSelectedId((prev) => (prev === s.id ? null : s.id))
                   }
                 >
-                  {new Date(s.timestamp).toLocaleDateString()} —{" "}
+                  <span>{new Date(s.timestamp).toLocaleDateString()}</span>
                   <span
-                    className={`inline-block max-w-[160px] truncate px-2 py-0.5 rounded text-xs font-semibold text-white ${tagStyle}`}
+                    className={`inline-block px-2 py-0.5 rounded text-xs font-semibold text-white ${
+                      isCorrection ? "bg-[#b85e2e]" : "bg-[#FC7023]"
+                    } `}
                   >
-                    {tagText}
+                    {isCorrection ? "User" : s.movie_title ?? "Movie"}
                   </span>
                 </div>
 
