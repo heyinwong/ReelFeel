@@ -70,6 +70,7 @@ class AddMovieInput(BaseModel):
     release_year: int | None = None
     genres: str | None = ""
     director: str | None = ""
+    tmdb_id: int
 
 class UpdateSummaryInput(BaseModel):
     feedback: str
