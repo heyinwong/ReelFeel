@@ -94,7 +94,7 @@ function MovieModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-[95vw] sm:max-w-[900px] max-h-[95vh] sm:max-h-[90vh] overflow-y-auto rounded-xl shadow-lg"
+        className="w-full max-w-[95vw] sm:max-w-[900px] max-h-[95vh] sm:max-h-[90vh] overflow-hidden rounded-xl shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
         <motion.div

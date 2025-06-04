@@ -5,8 +5,8 @@ function MovieModalFront({ movie, onFlip, readOnly }) {
   const isWatched = movie.mode === "watched";
 
   return (
-    <div className="absolute inset-0 flex flex-col lg:flex-row bg-white rounded-xl shadow-lg overflow-hidden max-h-[90vh] [backface-visibility:hidden]">
-      {/* 图片区域：竖屏在上，横屏在左 */}
+    <div className="absolute inset-0 flex flex-col lg:flex-row bg-white rounded-xl shadow-lg [backface-visibility:hidden]">
+      {/* 左侧图像区域 */}
       <div className="w-full lg:w-1/2 h-60 sm:h-72 lg:h-auto">
         <img
           src={movie.backdrop || movie.poster}
@@ -15,9 +15,10 @@ function MovieModalFront({ movie, onFlip, readOnly }) {
         />
       </div>
 
-      {/* 信息区域 */}
-      <div className="w-full lg:w-1/2 bg-[#281B13] text-[#F3E2D4] px-4 sm:px-6 py-6 flex flex-col justify-between border-t-4 lg:border-t-0 lg:border-l-4 border-[#FC7023] max-h-[90vh] overflow-auto">
-        <div className="space-y-3 flex-grow overflow-auto pr-1">
+      {/* 右侧信息区域 */}
+      <div className="w-full lg:w-1/2 bg-[#281B13] text-[#F3E2D4] px-4 sm:px-6 py-6 flex flex-col justify-between border-t-4 lg:border-t-0 lg:border-l-4 border-[#FC7023] max-h-[90vh]">
+        {/* 信息展示部分 */}
+        <div className="flex-grow space-y-3 overflow-hidden">
           <h2 className="text-xl sm:text-2xl font-bold">{movie.title}</h2>
 
           {movie.director && (
@@ -45,15 +46,15 @@ function MovieModalFront({ movie, onFlip, readOnly }) {
             </p>
           )}
 
-          {/* 描述文字：限制高度可滚动 */}
-          <div className="text-sm sm:text-base leading-relaxed text-[#F3E2D4]/90 max-h-40 overflow-y-auto pr-1">
+          {/* 独立滚动的描述 */}
+          <div className="text-sm sm:text-base leading-relaxed text-[#F3E2D4]/90 mt-4 max-h-40 overflow-y-auto pr-2">
             {movie.description || "No description available."}
           </div>
         </div>
 
-        {/* 观看过的用户信息展示 */}
+        {/* 仅 watched 显示用户数据 */}
         {isWatched && (
-          <div className="mt-6">
+          <div className="mt-4">
             <UserMovieStats
               rating={movie.user_rating}
               liked={movie.liked}
@@ -62,9 +63,9 @@ function MovieModalFront({ movie, onFlip, readOnly }) {
           </div>
         )}
 
-        {/* 按钮底部吸附 */}
+        {/* 翻转按钮 */}
         {!readOnly && (
-          <div className="mt-6 flex justify-end">
+          <div className="mt-4 flex justify-end">
             <button
               onClick={onFlip}
               className="w-full sm:w-auto px-4 py-2 rounded-lg bg-[#FC7023] text-[#281B13] font-medium hover:bg-[#ff8c3a] transition"
