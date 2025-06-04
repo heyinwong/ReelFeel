@@ -197,10 +197,55 @@ async def fetch_movie_info(title: str, year_hint: int | None = None):
         }
 
 # ---------- Routes ----------
+
+def normalize(title):
+    return re.sub(r"[^\w\s]", "", title.lower().strip())
+
 @app.post("/recommend")
 async def recommend_movies(data: MoodInput, db: AsyncSession = Depends(get_db)):
+    def normalize_titles(titles):
+        return set(normalize(t) for t in titles if t)
+
+    async def get_filtered_recommendations(prompt, watched_set, waiting_set, has_summary):
+        for _ in range(3):  # retry up to 3 times
+            response = openai.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7,
+            )
+            raw_content = response.choices[0].message.content.strip()
+
+            try:
+                recommendations = json.loads(raw_content)
+            except json.JSONDecodeError:
+                continue
+
+            result = []
+            seen_titles = watched_set.union(waiting_set)
+
+            for item in recommendations:
+                title_raw = item.get("title", "")
+                norm_title = normalize(title_raw)
+                if not norm_title or norm_title in seen_titles:
+                    continue
+                year = item.get("year")
+                if not isinstance(year, int):
+                    year = None
+                reason = item.get("reason", "") if has_summary else ""
+                info = await fetch_movie_info(title_raw, year)
+                if info:
+                    info["reason"] = reason
+                    result.append(info)
+                if len(result) >= 3:
+                    break
+
+            if result:
+                return result
+
+        return []
+
     try:
-        # === Guest Mode（No user_id） ===
+        # === Guest Mode ===
         if data.user_id is None:
             prompt = (
                 f"Return ONLY a JSON array of 3 movie titles that match user's input: '{data.mood}'. "
@@ -236,12 +281,14 @@ async def recommend_movies(data: MoodInput, db: AsyncSession = Depends(get_db)):
         watched_result = await db.execute(
             select(WatchedMovie.title).where(WatchedMovie.user_id == user_id)
         )
-        watched_titles = [row[0] for row in watched_result.fetchall()]
+        raw_watched_titles = [row[0] for row in watched_result.fetchall()]
+        watched_titles = normalize_titles(raw_watched_titles)
 
         waiting_result = await db.execute(
             select(WaitingMovie.title).where(WaitingMovie.user_id == user_id)
         )
-        waiting_titles = [row[0] for row in waiting_result.fetchall()]
+        raw_waiting_titles = [row[0] for row in waiting_result.fetchall()]
+        waiting_titles = normalize_titles(raw_waiting_titles)
 
         summary_result = await db.execute(
             select(TasteSummary.summary).where(TasteSummary.user_id == user_id)
@@ -256,10 +303,10 @@ async def recommend_movies(data: MoodInput, db: AsyncSession = Depends(get_db)):
             f"You are a personalized movie recommender.\n"
             f"User's taste summary:\n{taste_summary}\n\n"
             f"User query or mood: {data.mood}\n"
-            f"Do NOT recommend these watched titles:\n{watched_titles}\n"
+            f"IMPORTANT: Do NOT recommend these watched titles:\n{raw_watched_titles}\n"
         )
-        if waiting_titles:
-            prompt += f"Do NOT recommend these waiting titles:\n{waiting_titles}\n"
+        if raw_waiting_titles:
+            prompt += f"IMPORTANT: Do NOT recommend these waiting titles:\n{raw_waiting_titles}\n"
 
         if has_summary:
             prompt += (
@@ -275,37 +322,16 @@ async def recommend_movies(data: MoodInput, db: AsyncSession = Depends(get_db)):
                 "Do not include 'reason'. Example: [{\"title\": \"Inception\", \"year\": 2010}]\n"
             )
 
-        # --- GPT call ---
-        response = openai.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7,
+        # --- Fetch with filtering ---
+        filtered = await get_filtered_recommendations(
+            prompt, watched_titles, waiting_titles, has_summary
         )
-        raw_content = response.choices[0].message.content.strip()
 
-        try:
-            recommendations = json.loads(raw_content)
-        except json.JSONDecodeError:
-            raise HTTPException(status_code=500, detail=f"Invalid JSON:\n{raw_content}")
-
-        result = []
-        for item in recommendations:
-            title = item.get("title")
-            year = item.get("year")
-            if not isinstance(year, int):
-                year = None
-            reason = item.get("reason", "") if has_summary else ""
-            info = await fetch_movie_info(title, year)
-            if info:
-                info["reason"] = reason
-                result.append(info)
-
-        return {"recommendations": result}
+        return {"recommendations": filtered}
 
     except Exception as e:
         print("[recommend top-level error]:", repr(e))
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @app.get("/watched-list")
 async def get_watched(user: User = Depends(get_current_user)):
