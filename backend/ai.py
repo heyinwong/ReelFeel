@@ -22,8 +22,17 @@ async def generate_snapshot_comment(
 ):
     bullet = []
 
-    if user_rating:
-        bullet.append(f"You rated it {user_rating}/5.")
+    # Rating classification
+    rating_level = None
+    if user_rating is not None:
+        if user_rating >= 8.0:
+            rating_level = "high"
+        elif user_rating <= 4.0:
+            rating_level = "low"
+        else:
+            rating_level = "neutral"
+        bullet.append(f"You rated it {user_rating}/10 ({rating_level} rating).")
+
     if review:
         bullet.append(f"You wrote: \"{review}\"")
     if mood_tags:
@@ -41,7 +50,11 @@ async def generate_snapshot_comment(
         f"You are an AI assistant analyzing a user's recent film experience.\n"
         f"The movie was '{movie_title}'. Here's what we know:\n{bullet_points}\n\n"
         "Write a short (1–2 sentence) natural-sounding observation about what this movie choice and user behavior suggest about their personal film taste.\n"
-        "Use 'you' to refer to the user directly, and be thoughtful but not overly sentimental or artificial."
+        "Use 'you' to refer to the user directly.\n"
+        "If the user gave a low rating (2 or below), do not call it a favorite or praise it.\n"
+        "If the rating was neutral (between 2–4), reflect mixed or moderate feelings.\n"
+        "Only describe it as a favorite, beloved, or highly appreciated if the rating is 4 or above.\n"
+        "Avoid artificial praise, and focus on taste insight based on the combination of review, moods, and rating."
     )
 
     try:

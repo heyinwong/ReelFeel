@@ -29,7 +29,7 @@ function MovieModalFront({ movie, onFlip, readOnly }) {
 
           <p className="text-sm sm:text-base text-[#F3E2D4]/80">
             <strong className="text-[#FC7023]">TMDB Score:</strong>{" "}
-            {movie.tmdb_rating ?? "N/A"}
+            {movie.tmdb_rating ? Number(movie.tmdb_rating).toFixed(1) : "N/A"}
           </p>
 
           {movie.genres && (

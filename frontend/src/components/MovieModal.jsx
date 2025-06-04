@@ -21,7 +21,7 @@ function MovieModal({
   const [selectedMoods, setSelectedMoods] = useState([]);
   const [watchDate, setWatchDate] = useState("");
   const [localDisliked, setLocalDisliked] = useState(false);
-
+  const [isSaving, setIsSaving] = useState(false);
   useEffect(() => {
     if (movie) {
       setLocalRating(movie.user_rating || 0);
@@ -52,6 +52,7 @@ function MovieModal({
     const hasData =
       localRating > 0 ||
       localLiked ||
+      localDisliked || // ✅ 加上这个
       review.trim() !== "" ||
       selectedMoods.length > 0;
 
@@ -60,19 +61,25 @@ function MovieModal({
       return;
     }
 
-    await onReview?.({
-      ...movie,
-      user_rating: localRating,
-      liked: localLiked,
-      disliked: localDisliked,
-      review,
-      moods: selectedMoods,
-      watch_date: watchDate,
-      ...(isFromWaiting ? { fromWaiting: true } : {}),
-    });
-
-    toast.success("Review saved!");
-    onClose?.();
+    try {
+      setIsSaving(true); // start loading
+      await onReview?.({
+        ...movie,
+        user_rating: localRating,
+        liked: localLiked,
+        disliked: localDisliked,
+        review,
+        moods: selectedMoods,
+        watch_date: watchDate,
+        ...(isFromWaiting ? { fromWaiting: true } : {}),
+      });
+      toast.success("Review saved!");
+      onClose?.();
+    } catch (err) {
+      toast.error("Failed to save.");
+    } finally {
+      setIsSaving(false); // end loading
+    }
   };
 
   const toggleMood = (tag) => {
@@ -120,6 +127,7 @@ function MovieModal({
               toggleMood={toggleMood}
               watchDate={watchDate}
               setWatchDate={setWatchDate}
+              isSaving={isSaving}
             />
           )}
         </motion.div>

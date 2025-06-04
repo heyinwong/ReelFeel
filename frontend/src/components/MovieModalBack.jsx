@@ -2,6 +2,7 @@ import React from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import MoodSelector from "./MoodSelector";
+import { motion, AnimatePresence } from "framer-motion";
 
 function MovieModalBack({
   movie,
@@ -151,10 +152,35 @@ function MovieModalBack({
           </button>
         )}
         <button
-          className="px-6 py-2 rounded-md bg-[#FC7023] text-[#281B13] font-semibold hover:bg-[#ff8c3a] transition hover:scale-[1.05]"
+          className="px-6 py-2 rounded-md bg-[#FC7023] text-[#281B13] font-semibold hover:bg-[#ff8c3a] transition hover:scale-[1.05] flex items-center gap-2"
           onClick={onSave}
+          disabled={isSaving}
         >
-          {isSaving ? "Saving..." : "Save"}
+          <AnimatePresence mode="wait">
+            {isSaving ? (
+              <motion.div
+                key="spinner"
+                className="h-4 w-4 border-2 border-[#281B13] border-t-transparent rounded-full"
+                animate={{ rotate: 360 }}
+                initial={{ rotate: 0 }}
+                transition={{
+                  repeat: Infinity,
+                  repeatType: "loop",
+                  duration: 0.6,
+                  ease: "linear",
+                }}
+              />
+            ) : (
+              <motion.span
+                key="save-text"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                Save
+              </motion.span>
+            )}
+          </AnimatePresence>
         </button>
         <button
           className="px-6 py-2 rounded-md border border-[#F3E2D4]/50 text-[#F3E2D4] hover:bg-[#F3E2D4]/10 transition hover:scale-[1.05]"
