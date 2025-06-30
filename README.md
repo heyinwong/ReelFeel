@@ -15,47 +15,72 @@ The system acts like an AI agent: observing how you respond to films and gradual
 
 > In the end, ReelFeel is a small attempt to let AI assist in something very human: choosing a story that speaks to you.
 
-
 ## Features
 
 ### Personalized AI Recommendation
+
 - Uses GPT + TMDB API to recommend movies based on user's taste profile
 - Avoids suggesting movies already in the user's history (watched/waiting lists)
 
 ### Taste Modeling
+
 - Every time a user likes, rates, or reviews a movie, a “taste snapshot” is created
 - Snapshots are summarized into a long-term taste profile using GPT
 - These profiles drive future recommendations and provide transparent reasoning for each suggestion.
 
 ### Interactive Movie Management
+
 - Can log movies to watched list with detailed user input: rating (1–10), moods, comments, likes
 - Waiting list (to-watch), with backend validation to avoid duplicates
 - Review interface supports seamless transition from waiting → watched
 
 ### Authentication & Security
+
 - Login and registration system using FastAPI + JWT and bcrypt hashing
 
 ### API-first Backend Design
+
 - Modular API endpoints for all operations: recommendation, snapshot, taste summary, list CRUD
 - Built with asynchronous FastAPI and SQLite, enabling smooth multi-user interaction
 
 ---
 
+## Key Screenshots
+
+### Main Page
+
+![MainPage](./screenshots/mainpage.png)
+
+### AI Mood-Based Recommendation and Real-Time Movie Search
+
+![Recommendation](./screenshots/recommendation.png)
+![Search](./screenshots/search.png)
+
+### AI-Powered Taste Dashboard
+
+![Dashboard](./screenshots/dashboard.png)
+
+### Your Reel Collection
+
+![Reel Log](./screenshots/reellog.png)
+
+---
+
 ## Tech Stack
 
-| Layer       | Technology                                                              |
-|-------------|-------------------------------------------------------------------------|
-| Frontend    | React (Vite), TailwindCSS, Framer Motion (animations)       |
-| Backend     | FastAPI, SQLite, Async SQLAlchemy, Pydantic                            |
-| Auth        | JWT (token-based auth), bcrypt (password hashing)                      |
-| AI Logic    | OpenAI(recommendation, taste modeling), TMDB API (movie data)   |
-| UI Design   | Retro film-inspired theme, responsive layout, animated components      |
+| Layer     | Technology                                                        |
+| --------- | ----------------------------------------------------------------- |
+| Frontend  | React (Vite), TailwindCSS, Framer Motion (animations)             |
+| Backend   | FastAPI, SQLite, Async SQLAlchemy, Pydantic                       |
+| Auth      | JWT (token-based auth), bcrypt (password hashing)                 |
+| AI Logic  | OpenAI(recommendation, taste modeling), TMDB API (movie data)     |
+| UI Design | Retro film-inspired theme, responsive layout, animated components |
 
 ## Getting Started
 
 ### Backend (FastAPI)
 
-1. *(Optional)* Create and activate a virtual environment:
+1. _(Optional)_ Create and activate a virtual environment:
 
    ```bash
    python3 -m venv venv_reelfeel
@@ -118,8 +143,8 @@ ReelFeel is in active development. All core features — including secure login,
 
 **Upcoming improvements:**
 
-- Exclude movies already in the waiting list from AI recommendations  
-- Improve title matching accuracy to avoid wrong movie retrievals from TMDB  
-- Add subtle UI animations and polish  
-- Expand the Dashboard with more insights and interactive feedback  
+- Exclude movies already in the waiting list from AI recommendations
+- Improve title matching accuracy to avoid wrong movie retrievals from TMDB
+- Add subtle UI animations and polish
+- Expand the Dashboard with more insights and interactive feedback
 - Support for demo user access before final deployment
