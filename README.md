@@ -148,3 +148,4 @@ ReelFeel is in active development. All core features — including secure login,
 - Add subtle UI animations and polish
 - Expand the Dashboard with more insights and interactive feedback
 - Support for demo user access before final deployment
+- transfer SQLlite to postgreSQL for deployment reason
