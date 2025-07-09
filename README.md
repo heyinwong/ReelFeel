@@ -1,4 +1,4 @@
-# ReelFeel: A Taste-Based Movie Recommender Web App
+# ReelFeel: A Taste-Based Movie Recommender Web App (In Development)
 
 A desktop-oriented full-stack web app that uses AI to model and recommend films based on your viewing patterns and personal reflections.
 
@@ -141,7 +141,7 @@ export MOVIE_PASS_KEY=your_jwt_secret_key
 
 ReelFeel is in active development. All core features — including secure login, taste-based recommendation, and watchlist management — are complete. The app is fully responsive across devices and supports real-time taste modeling powered by GPT.
 
-**Upcoming improvements:**
+**Plans:**
 
 - Exclude movies already in the waiting list from AI recommendations
 - Improve title matching accuracy to avoid wrong movie retrievals from TMDB
