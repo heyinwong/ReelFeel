@@ -6,7 +6,12 @@ from models import WatchedMovie, WaitingMovie
 from base import Base
 from datetime import datetime
 
-DATABASE_URL = "sqlite+aiosqlite:///./app.db"
+import os
+from dotenv import load_dotenv
+
+load_dotenv(dotenv_path=".env")  
+
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 engine = create_async_engine(DATABASE_URL, echo=True)
 async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
