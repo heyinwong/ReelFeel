@@ -8,6 +8,7 @@ import useAuth from "../hooks/useAuth";
 import API from "../utils/api";
 import Footer from "../components/Footer";
 import MovieFilterBar from "../components/MovieFilterBar";
+import CollectionHero from "../components/CollectionHero";
 import { motion } from "framer-motion";
 
 function WaitingListPage() {
@@ -36,17 +37,16 @@ function WaitingListPage() {
 
   const handleDelete = async (movie) => {
     try {
-      const res = await API.delete(
-        `/waiting/${encodeURIComponent(movie.title)}`
-      );
+      const res = await API.delete(`/waiting/${movie.id}`);
       if (res.status === 200) {
-        setMovies((prev) => prev.filter((m) => m.title !== movie.title));
+        setMovies((prev) => prev.filter((m) => m.id !== movie.id));
         toast.success("Removed from Watchlist");
       } else {
         console.error("Delete failed:", res);
       }
     } catch (err) {
       console.error("Error deleting movie:", err);
+      toast.error(err.response?.data?.detail || "Error deleting movie.");
     }
   };
 
@@ -59,17 +59,18 @@ function WaitingListPage() {
     const hasReviewData =
       movie.user_rating > 0 ||
       movie.liked ||
+      movie.disliked ||
       (movie.review && movie.review.trim() !== "") ||
       (movie.moods && movie.moods.length > 0);
 
     if (movie.fromWaiting && hasReviewData) {
       try {
         await API.post("/review", { ...movie, fromWaiting: true });
-        await handleDelete(movie);
+        setMovies((prev) => prev.filter((m) => m.id !== movie.id));
         toast.success("Moved to Watched");
       } catch (err) {
         console.error("❌ Failed to move movie to watched:", err);
-        toast.error("Failed to save review");
+        throw err;
       }
     }
   };
@@ -95,6 +96,15 @@ function WaitingListPage() {
         <HeaderBar />
 
         <main className="flex-grow px-6 pt-8 max-w-screen-xl mx-auto w-full">
+          <CollectionHero
+            eyebrow="Watchlist"
+            title="A queue with a point of view."
+            description="Keep candidates here, then turn the strongest ones into reviewed memories when you actually watch them."
+            count={movies.length}
+            user={user}
+            accent={movies.length === 1 ? "candidate" : "candidates"}
+          />
+
           <MovieFilterBar
             sortOption={sortOption}
             setSortOption={setSortOption}
@@ -114,7 +124,7 @@ function WaitingListPage() {
               {sorted.map((movie, index) =>
                 movie?.title ? (
                   <motion.div
-                    key={movie.title}
+                    key={movie.id}
                     className="w-full max-w-[180px]"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -136,6 +146,7 @@ function WaitingListPage() {
           onClose={() => setSelectedMovie(null)}
           onReview={handleReview}
           onDelete={handleDelete}
+          readOnly={user?.is_demo}
         />
 
         <Footer />

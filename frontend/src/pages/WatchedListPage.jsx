@@ -7,7 +7,9 @@ import useAuth from "../hooks/useAuth";
 import API from "../utils/api";
 import MovieFilterBar from "../components/MovieFilterBar";
 import Footer from "../components/Footer";
+import CollectionHero from "../components/CollectionHero";
 import { motion } from "framer-motion";
+import toast from "react-hot-toast";
 
 function WatchedListPage() {
   const { user, isLoading } = useAuth();
@@ -36,16 +38,15 @@ function WatchedListPage() {
 
   const handleDelete = async (movie) => {
     try {
-      const res = await API.delete(
-        `/watched/${encodeURIComponent(movie.title)}`
-      );
+      const res = await API.delete(`/watched/${movie.id}`);
       if (res.status === 200) {
-        setMovies((prev) => prev.filter((m) => m.title !== movie.title));
+        setMovies((prev) => prev.filter((m) => m.id !== movie.id));
       } else {
         console.error("Failed to delete:", res);
       }
     } catch (err) {
       console.error("Error deleting movie:", err);
+      toast.error(err.response?.data?.detail || "Error deleting movie.");
     }
   };
 
@@ -57,9 +58,12 @@ function WatchedListPage() {
 
     try {
       const res = await API.post("/review", {
+        id: movie.id,
+        tmdb_id: movie.tmdb_id,
         title: movie.title,
         user_rating: movie.user_rating,
         liked: movie.liked,
+        disliked: movie.disliked,
         review: movie.review,
         moods: movie.moods,
         watch_date: movie.watch_date,
@@ -67,11 +71,12 @@ function WatchedListPage() {
 
       if (res.status === 200) {
         setMovies((prev) =>
-          prev.map((m) => (m.title === movie.title ? { ...m, ...movie } : m))
+          prev.map((m) => (m.id === movie.id ? { ...m, ...movie } : m))
         );
       }
     } catch (err) {
       console.error("Error saving review:", err);
+      throw err;
     }
   };
 
@@ -115,6 +120,14 @@ function WatchedListPage() {
         <HeaderBar />
 
         <main className="flex-grow w-full max-w-screen-xl mx-auto px-4 sm:px-6 pt-8">
+          <CollectionHero
+            eyebrow="Reel Log"
+            title="Every film becomes taste memory."
+            description="Your ratings, moods, and reviews feed the agent that explains what you love and what to watch next."
+            count={movies.length}
+            user={user}
+          />
+
           <MovieFilterBar
             sortOption={sortOption}
             setSortOption={setSortOption}
@@ -139,7 +152,7 @@ function WatchedListPage() {
               {sortedAndFiltered.map((movie, index) =>
                 movie?.title ? (
                   <motion.div
-                    key={movie.title}
+                    key={movie.id}
                     className="w-full max-w-[180px]"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -161,6 +174,7 @@ function WatchedListPage() {
             onClose={() => setSelectedMovie(null)}
             onReview={handleReview}
             onDelete={handleDelete}
+            readOnly={user?.is_demo}
           />
         )}
         {/* 保证 Footer 始终可见 */}

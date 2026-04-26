@@ -1,16 +1,24 @@
-import React from "react";
+import { useEffect, useState } from "react";
 import UserMovieStats from "./UserMovieStats";
 
 function MovieModalFront({ movie, onFlip, readOnly }) {
+  const [imageFailed, setImageFailed] = useState(false);
   const isWatched = movie.mode === "watched";
+  const imageSource = movie.backdrop || movie.poster;
+  const imageSrc = imageSource && !imageFailed ? imageSource : "/poster.jpg";
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [movie.id, movie.tmdb_id, imageSource]);
 
   return (
     <div className="absolute inset-0 flex flex-col lg:flex-row bg-white rounded-xl shadow-lg [backface-visibility:hidden]">
       {/* 左侧图像区域 */}
       <div className="w-full lg:w-1/2 h-60 sm:h-72 lg:h-auto">
         <img
-          src={movie.backdrop || movie.poster}
+          src={imageSrc}
           alt={movie.title}
+          onError={() => setImageFailed(true)}
           className="w-full h-full object-cover"
         />
       </div>

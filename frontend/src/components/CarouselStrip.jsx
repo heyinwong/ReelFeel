@@ -1,16 +1,57 @@
-import { useRef, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { motion } from "framer-motion";
+
+function CarouselImage({ movie }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const imageSource = movie.backdrop || movie.poster;
+  const imageSrc = imageSource && !imageFailed ? imageSource : "/poster.jpg";
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [movie.id, movie.tmdb_id, imageSource]);
+
+  return (
+    <img
+      src={imageSrc}
+      alt={movie.title}
+      onError={() => setImageFailed(true)}
+      className="h-full w-full rounded object-cover"
+    />
+  );
+}
 
 function CarouselStrip({ movies, current, setCurrent, onCardClick }) {
   const total = movies.length;
-  const trackRef = useRef(null);
   const touchStartX = useRef(null);
 
-  const handlePrev = () => {
-    setCurrent((prev) => (prev === 0 ? total - 1 : prev - 1));
+  const visibleMovies = useMemo(() => {
+    if (total === 1) {
+      return [{ movie: movies[0], index: 0, position: "center" }];
+    }
+    if (total === 2) {
+      return [
+        { movie: movies[current], index: current, position: "center" },
+        { movie: movies[(current + 1) % total], index: (current + 1) % total, position: "right" },
+      ];
+    }
+    const previous = (current - 1 + total) % total;
+    const next = (current + 1) % total;
+    return [
+      { movie: movies[previous], index: previous, position: "left" },
+      { movie: movies[current], index: current, position: "center" },
+      { movie: movies[next], index: next, position: "right" },
+    ];
+  }, [current, movies, total]);
+
+  const rotateLeft = () => {
+    if (total <= 1) return;
+    setCurrent((prev) => (prev === total - 1 ? 0 : prev + 1));
   };
 
-  const handleNext = () => {
-    setCurrent((prev) => (prev === total - 1 ? 0 : prev + 1));
+  const rotateRight = () => {
+    if (total <= 1) return;
+    setCurrent((prev) => (prev === 0 ? total - 1 : prev - 1));
   };
 
   const handleTouchStart = (e) => {
@@ -20,80 +61,77 @@ function CarouselStrip({ movies, current, setCurrent, onCardClick }) {
   const handleTouchEnd = (e) => {
     if (touchStartX.current !== null) {
       const diff = e.changedTouches[0].clientX - touchStartX.current;
-      if (diff > 50) handlePrev();
-      else if (diff < -50) handleNext();
+      if (diff > 50) rotateRight();
+      else if (diff < -50) rotateLeft();
       touchStartX.current = null;
     }
   };
 
-  useEffect(() => {
-    if (trackRef.current) {
-      trackRef.current.style.transition =
-        "transform 400ms cubic-bezier(0.5, 0, 0.3, 1)";
-      trackRef.current.style.transform = `translateX(-${current * 100}%)`;
-    }
-  }, [current]);
-
   return (
     <div
-      className="relative w-full overflow-hidden"
-      style={{ overflowY: "hidden", maxHeight: "15rem", height: "15rem" }} // h-60 = 15rem
+      className="relative w-full overflow-hidden px-12 sm:px-16"
+      style={{ overflowY: "hidden", maxHeight: "15rem", height: "15rem" }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* 左按钮 */}
-      <button
-        onClick={handlePrev}
-        className="absolute left-1/2 -translate-x-[240px] top-1/2 -translate-y-1/2 z-10 text-xl text-white bg-black bg-opacity-30 hover:bg-opacity-60 hover:scale-105 rounded-full px-2 sm:px-3 py-1 transition-all hidden sm:block"
-      >
-        ←
-      </button>
-
-      {/* 右按钮 */}
-      <button
-        onClick={handleNext}
-        className="absolute left-1/2 translate-x-[240px] top-1/2 -translate-y-1/2 z-10 text-xl text-white bg-black bg-opacity-30 hover:bg-opacity-60 hover:scale-105 rounded-full px-2 sm:px-3 py-1 transition-all hidden sm:block"
-      >
-        →
-      </button>
-
-      {/* 轮播轨道 */}
-      <div className="w-full h-full flex items-center justify-center">
-        <div
-          ref={trackRef}
-          className="flex w-full h-full"
-          style={{ width: `${movies.length * 100}%` }}
+      {total > 1 && (
+        <button
+          type="button"
+          onClick={rotateLeft}
+          aria-label="Previous movie"
+          className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 hidden h-11 w-11 items-center justify-center rounded-full bg-black/70 text-white shadow-lg ring-1 ring-white/20 transition hover:scale-105 hover:bg-black sm:flex"
         >
-          {movies.map((movie, idx) => {
-            const isCenter = idx === current;
-            return (
-              <div
-                key={movie.title + idx}
-                className={`transition-all duration-300 flex-shrink-0 w-full h-full px-1 sm:px-2 flex justify-center items-center ${
-                  isCenter ? "scale-105 z-10" : "scale-95 opacity-60"
+          <ChevronLeft size={26} strokeWidth={2.5} />
+        </button>
+      )}
+
+      {total > 1 && (
+        <button
+          type="button"
+          onClick={rotateRight}
+          aria-label="Next movie"
+          className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 hidden h-11 w-11 items-center justify-center rounded-full bg-black/70 text-white shadow-lg ring-1 ring-white/20 transition hover:scale-105 hover:bg-black sm:flex"
+        >
+          <ChevronRight size={26} strokeWidth={2.5} />
+        </button>
+      )}
+
+      <div className="flex h-full w-full items-center justify-center gap-5 sm:gap-7">
+        {visibleMovies.map(({ movie, index, position }) => {
+          const isActive = index === current;
+          return (
+            <motion.div
+              layout
+              key={movie.tmdb_id || `${movie.title}-${index}`}
+              transition={{ type: "spring", stiffness: 260, damping: 28 }}
+              className={`flex h-full shrink-0 items-center justify-center ${
+                isActive ? "z-10 scale-110 opacity-100" : "scale-95 opacity-65"
+              }`}
+            >
+              <button
+                type="button"
+                aria-current={isActive ? "true" : undefined}
+                className={`relative h-52 w-[18rem] max-w-[28vw] cursor-pointer overflow-hidden rounded-xl shadow-md transition duration-300 hover:scale-[1.04] hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-[#FC7023] ${
+                  isActive
+                    ? "shadow-[0_14px_35px_rgba(252,112,35,0.22)] ring-2 ring-[#FC7023]/70"
+                    : "ring-1 ring-white/5"
                 }`}
+                style={{
+                  backgroundImage: "url('/card.jpg')",
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  padding: "15px",
+                }}
+                onClick={() => onCardClick?.(movie)}
               >
-                <div
-                  className="relative h-52 w-[90%] sm:w-80 rounded-xl overflow-hidden shadow-md cursor-pointer hover:scale-[1.08] hover:shadow-2xl transition-all duration-300"
-                  style={{
-                    backgroundImage: "url('/card.jpg')",
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                    padding: "15px",
-                  }}
-                  onClick={() => onCardClick?.(movie)}
-                >
-                  <img
-                    src={movie.backdrop}
-                    alt={movie.title}
-                    className="w-full h-full object-cover rounded"
-                    style={{ maxHeight: "100%" }}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                <span className="sr-only">
+                  {position === "center" ? "Selected recommendation" : "Recommendation"}
+                </span>
+                <CarouselImage movie={movie} />
+              </button>
+            </motion.div>
+          );
+        })}
       </div>
     </div>
   );

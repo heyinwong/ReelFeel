@@ -1,6 +1,14 @@
-# ReelFeel: A Taste-Based Movie Recommender Web App
+# ReelFeel: AI Taste Agent for Movie Discovery
 
-A desktop-oriented full-stack web app that uses AI to model and recommend films based on your viewing patterns and personal reflections.
+ReelFeel is a portfolio-grade full-stack AI project that turns movie logs into a structured taste profile, retrieves TMDB candidates, and uses low-cost LLM reranking to explain why a film fits you.
+
+It is designed to show:
+
+- Hybrid TMDB retrieval + low-cost LLM reranking
+- Structured taste memory from ratings, reviews, moods, and watch history
+- JWT-scoped user data and a read-only live demo account
+- AI usage logging with estimated token cost
+- A product-facing Taste Agent Console that makes the recommendation logic visible
 
 ## Design Philosophy
 
@@ -16,6 +24,13 @@ The system acts like an AI agent: observing how you respond to films and gradual
 > In the end, ReelFeel is a small attempt to let AI assist in something very human: choosing a story that speaks to you.
 
 ## Features
+
+### Live AI Taste Agent Demo
+
+- Magic demo link support: `/demo?code=<DEMO_ACCESS_CODE>`
+- Demo account is seeded with curated watched movies, reviews, snapshots, and a high-confidence taste profile
+- Demo account is read-only, so visitors can explore without damaging the showcase data
+- Taste Agent Console shows profile confidence, memory count, AI cost, match tags, and recommendation reasoning
 
 ### Personalized AI Recommendation
 
@@ -90,10 +105,18 @@ The system acts like an AI agent: observing how you respond to films and gradual
 2. Install dependencies:
 
    ```bash
+   cd backend
    pip install -r requirements.txt
    ```
 
-3. Start the development server:
+3. Create a local env file and fill in your keys:
+
+   ```bash
+   cp .env.example .env
+   openssl rand -hex 32  # use this for MOVIE_PASS_KEY
+   ```
+
+4. Start the development server:
 
    ```bash
    uvicorn main:app --reload
@@ -111,23 +134,85 @@ npm run dev
 
 ## Environment Variables
 
-Before running, make sure to export the following environment variables:
+The backend loads `backend/.env` directly. Start from `backend/.env.example`:
+
+```env
+DATABASE_URL=sqlite+aiosqlite:///./app.db
+OPENAI_API_KEY=your_openai_key
+TMDB_API_KEY=your_tmdb_key
+MOVIE_PASS_KEY=your_jwt_secret_key
+DEMO_ENABLED=true
+DEMO_USERNAME=reelfeel_demo
+DEMO_ACCESS_CODE=your_demo_magic_link_code
+OPENAI_MODEL_CHEAP=gpt-4.1-nano
+OPENAI_MODEL_STANDARD=gpt-4.1-mini
+```
+
+The app uses the cheap model for small taste snapshots and the standard model for recommendation ranking and taste summaries.
+Guest recommendations use TMDB first to avoid unnecessary LLM calls. Logged-in recommendations use the user's taste profile, TMDB candidate retrieval, and a low-cost LLM rerank step.
+
+AI usage logging is enabled by default and can be inspected with:
 
 ```bash
-export OPENAI_API_KEY=your_openai_key
-export TMDB_API_KEY=your_tmdb_key
-export MOVIE_PASS_KEY=your_jwt_secret_key
+curl http://localhost:8000/ai-usage-summary \
+  -H "Authorization: Bearer <token>"
 ```
+
+The cost values are estimates based on the model prices configured in `.env.example`.
+
+Frontend env starts from `frontend/.env.example`:
+
+```env
+VITE_BACKEND_URL=http://localhost:8000
+VITE_DEMO_ACCESS_CODE=your_demo_magic_link_code
+```
+
+## Demo Walkthrough
+
+1. Open `/demo?code=<DEMO_ACCESS_CODE>` to enter the read-only showcase account.
+2. Scan the Taste Agent Console on the homepage to see the seeded taste memory.
+3. Ask for a mood, for example `quiet emotional family drama`.
+4. Inspect the carousel: the center card is the main recommendation, and the console explains the match.
+5. Visit Dashboard to see the structured taste profile, preference axes, snapshots, and charts.
+6. Try adding or editing a movie to see the read-only demo protection.
+
+## Architecture Flow
+
+```text
+Review / Rating / Mood
+        ↓
+Taste Snapshot
+        ↓
+Structured Taste Profile
+        ↓
+TMDB Candidate Pool
+        ↓
+Low-Cost LLM Rerank
+        ↓
+Explainable Recommendation + AI Usage Logging
+```
+
+## What This Demonstrates
+
+- Full-stack product architecture with React, FastAPI, SQLAlchemy, and JWT auth
+- AI system design that controls cost through model routing and bounded prompts
+- Secure user-data boundaries: recommendations and taste data are scoped to the JWT user
+- Product polish: demo mode, protected routes, read-only showcase data, and visible AI reasoning
+- Testing mindset: backend foundation tests, frontend lint/build checks, and manual smoke flows
 
 ## Project Structure
 
 ```
 /backend
-  ├── ai.py                 # GPT taste modeling + movie recommendations
+  ├── routers/              # API route groups
+  ├── services/             # OpenAI, TMDB, taste, recommendation logic
+  ├── repositories/         # Database query helpers
+  ├── schemas.py            # Pydantic API contracts
+  ├── ai.py                 # Backward-compatible AI wrapper
   ├── auth.py               # JWT login/register logic
   ├── database.py           # Async SQLite setup
   ├── models.py             # SQLAlchemy ORM models
-  ├── main.py               # FastAPI routes
+  ├── main.py               # FastAPI app assembly
   └── app.db                # Local SQLite database
 
 /frontend
@@ -139,7 +224,7 @@ export MOVIE_PASS_KEY=your_jwt_secret_key
 
 ## Status
 
-ReelFeel is in non-active development (I am too busy for work). All core features — including secure login, taste-based recommendation, and watchlist management — are complete. The app is fully responsive across devices and supports real-time taste modeling powered by GPT.
+ReelFeel is being refactored into a low-cost AI Taste Agent foundation. The current focus is reliable local development, JWT-scoped user data, structured taste profiles, TMDB-backed recommendation candidates, and transparent AI usage/cost tracking.
 
 **Plans:**
 

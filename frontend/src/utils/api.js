@@ -3,7 +3,7 @@ import axios from "axios";
 
 // 创建带 token 的 axios 实例
 const API = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL,
+  baseURL: import.meta.env.VITE_BACKEND_URL || "http://localhost:8000",
 });
 
 // 自动添加 Authorization 头

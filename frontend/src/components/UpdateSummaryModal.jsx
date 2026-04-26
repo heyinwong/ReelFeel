@@ -21,7 +21,7 @@ function UpdateSummaryModal({ onClose, onUpdated }) {
       onClose();
     } catch (err) {
       console.error("Failed to update summary:", err);
-      toast.error("Failed to update summary.");
+      toast.error(err.response?.data?.detail || "Failed to update summary.");
     } finally {
       setLoading(false);
     }

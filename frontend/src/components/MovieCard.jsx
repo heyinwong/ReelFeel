@@ -1,8 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 function MovieCard({ movie, onClick }) {
   const [hovered, setHovered] = useState(false);
-  const { title, poster, user_rating, liked, mode } = movie;
+  const [imageFailed, setImageFailed] = useState(false);
+  const { title, poster, user_rating, liked, mode, release_year } = movie;
+  const imageSrc = poster && !imageFailed ? poster : "/poster.jpg";
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [poster]);
 
   return (
     <div
@@ -18,10 +24,21 @@ function MovieCard({ movie, onClick }) {
         style={{ backgroundImage: "url('/poster.jpg')" }}
       >
         <img
-          src={poster}
+          src={imageSrc}
           alt={title}
+          onError={() => setImageFailed(true)}
           className="absolute top-[3%] left-[6%] w-[88%] h-[94%] object-cover rounded"
         />
+        <div className="absolute bottom-[3%] left-[6%] right-[6%] rounded-b bg-gradient-to-t from-black/90 via-black/55 to-transparent px-2 pb-2 pt-10 text-left">
+          <div className="line-clamp-2 text-sm font-black leading-tight text-white drop-shadow">
+            {title}
+          </div>
+          <div className="mt-1 flex items-center gap-2 text-[11px] font-bold text-[#F3E2D4]/85">
+            {release_year && <span>{release_year}</span>}
+            {mode !== "waiting" && user_rating ? <span>{user_rating / 2} / 5</span> : null}
+            {mode === "waiting" && <span>Watchlist</span>}
+          </div>
+        </div>
         {hovered && (
           <div className="absolute bottom-1 left-1 right-1 bg-[#281B13]/90 text-[#F3E2D4] backdrop-blur-sm rounded-lg px-3 py-2 text-sm shadow-md space-y-1 transition-opacity duration-200 overflow-hidden">
             {/* 标题 */}

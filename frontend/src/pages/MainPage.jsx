@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useRef } from "react";
 import RecommendBlock from "../components/RecommendBlock";
 import HeaderBar from "../components/HeaderBar";
 import MovieModal from "../components/MovieModal";
 import HeroSection from "../components/HeroSection";
 import SearchPanel from "../components/SearchPanel";
+import TasteAgentConsole from "../components/TasteAgentConsole";
 import useAuth from "../hooks/useAuth";
 import API from "../utils/api";
 import Footer from "../components/Footer";
@@ -12,7 +12,7 @@ import { motion } from "framer-motion";
 import { Typewriter } from "react-simple-typewriter";
 
 function MainPage() {
-  const { user, isLoading } = useAuth();
+  const { user } = useAuth();
   const [mode, setMode] = useState("mood");
   const [input, setInput] = useState("");
   const [submittedMood, setSubmittedMood] = useState("");
@@ -20,16 +20,14 @@ function MainPage() {
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [selectedMovie, setSelectedMovie] = useState(null);
-  const [selectedSuggestion, setSelectedSuggestion] = useState(null);
+  const [activeRecommendation, setActiveRecommendation] = useState(null);
   const debounceRef = useRef(null);
-  const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const recommendRef = useRef(null);
 
   const handleInputChange = (e) => {
     const value = e.target.value;
     setInput(value);
-    setSelectedSuggestion(null);
     if (mode === "search") {
       setRecommendations([]);
     }
@@ -64,19 +62,16 @@ function MainPage() {
     setSuggestions([]);
     setSubmittedMood(input);
     setRecommendations([]);
+    setActiveRecommendation(null);
     setLoading(true);
 
     try {
       let response;
       if (mode === "search") {
         response = await API.post("/search", { mood: input });
-      } else if (!user) {
-        response = await API.post("/recommend", { mood: input });
       } else {
         response = await API.post("/recommend", {
           mood: input,
-          user_id: user.id,
-          mode: undefined,
         });
       }
 
@@ -95,6 +90,8 @@ function MainPage() {
         genres: movie.genres || "",
         director: movie.director || "",
         tmdb_id: movie.tmdb_id || null,
+        taste_match_tags: movie.taste_match_tags || [],
+        confidence: movie.confidence || "low",
       }));
 
       setRecommendations(normalized);
@@ -113,14 +110,10 @@ function MainPage() {
   };
 
   const handleSelectSuggestion = async (movie) => {
-    console.log("Selected suggestion object:", movie);
-
     if (!movie || !movie.id) {
-      console.warn("Invalid movie suggestion. No TMDB ID found.");
       return;
     }
 
-    setSelectedSuggestion(movie);
     setSuggestions([]);
     setInput(movie.title);
 
@@ -170,9 +163,9 @@ function MainPage() {
           onSwitchMode={() => {
             setMode(mode === "mood" ? "search" : "mood");
             setRecommendations([]);
+            setActiveRecommendation(null);
             setSuggestions([]);
             setSubmittedMood("");
-            setSelectedSuggestion(null);
             setInput("");
           }}
           onSelectSuggestion={handleSelectSuggestion}
@@ -182,6 +175,7 @@ function MainPage() {
         className="px-4 w-full z-10 min-h-[300px] flex items-center justify-center"
         ref={recommendRef}
       >
+        <div className="w-full">
         {loading ? (
           <div className="flex flex-col items-center justify-center min-h-[220px] text-center px-4">
             <motion.div
@@ -213,36 +207,76 @@ function MainPage() {
               loading={false}
               user={user}
               onCardClick={setSelectedMovie}
+              onCurrentMovieChange={setActiveRecommendation}
               mode={mode}
+              agentPanel={
+                <TasteAgentConsole
+                  user={user}
+                  loading={loading}
+                  currentMovie={activeRecommendation}
+                  hasRecommendations={recommendations.length > 0}
+                  variant="side"
+                />
+              }
             />
           </motion.div>
-        ) : (
+        ) : submittedMood ? (
           <div className="flex flex-col items-center justify-center min-h-[220px] text-center px-4">
             <motion.h2
-              key={mode + "-slogan"}
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="text-3xl font-bold text-[#F3E2D4] drop-shadow-sm"
+              className="text-2xl sm:text-3xl font-bold text-[#F3E2D4] drop-shadow-sm"
             >
-              {mode === "mood"
-                ? "Let your reel unfold from who you are."
-                : "Seeking something specific?"}
+              No reel found yet.
             </motion.h2>
-
             <motion.p
-              key={mode + "-desc"}
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="text-[#F3E2D4]/90 text-base sm:text-lg mt-3 max-w-xl"
+              className="text-[#F3E2D4]/85 text-base sm:text-lg mt-3 max-w-xl"
             >
-              {mode === "mood"
-                ? "Describe a feeling, a vibe, or a fleeting thought. We'll find a film that echoes it."
-                : "Type a movie title, or explore suggestions that resonate with your taste."}
+              Try a simpler mood, genre, director, or movie title.
             </motion.p>
           </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center min-h-[220px] text-center px-4 gap-7">
+            <TasteAgentConsole
+              user={user}
+              loading={loading}
+              currentMovie={null}
+              hasRecommendations={false}
+              variant="compact"
+            />
+
+            <div>
+              <motion.h2
+                key={mode + "-slogan"}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="text-3xl font-bold text-[#F3E2D4] drop-shadow-sm"
+              >
+                {mode === "mood"
+                  ? "Let your reel unfold from who you are."
+                  : "Seeking something specific?"}
+              </motion.h2>
+
+              <motion.p
+                key={mode + "-desc"}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="text-[#F3E2D4]/90 text-base sm:text-lg mt-3 max-w-xl"
+              >
+                {mode === "mood"
+                  ? "Describe a feeling, a vibe, or a fleeting thought. We'll find a film that echoes it."
+                  : "Type a movie title, or explore suggestions that resonate with your taste."}
+              </motion.p>
+            </div>
+          </div>
         )}
+        </div>
       </div>
       {selectedMovie && typeof selectedMovie === "object" && (
         <MovieModal

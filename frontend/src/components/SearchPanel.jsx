@@ -1,6 +1,11 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
-import { FiRepeat } from "react-icons/fi";
+import { Search, Sparkles } from "lucide-react";
+
+const moodSamples = [
+  "quiet emotional sci-fi",
+  "warm family animation",
+  "bittersweet city romance",
+];
 
 function SearchPanel({
   mode,
@@ -12,7 +17,9 @@ function SearchPanel({
   loading,
   onSelectSuggestion,
 }) {
-  const [hovering, setHovering] = useState(false);
+  const applySample = (value) => {
+    onInputChange({ target: { value } });
+  };
 
   return (
     <motion.div
@@ -23,74 +30,92 @@ function SearchPanel({
     >
       <form
         onSubmit={onSubmit}
-        className="bg-[#fdf4e3]/70 backdrop-blur-md border border-[#fc7023]/20 p-6 rounded-xl shadow-lg max-w-3xl w-full flex flex-col sm:flex-row gap-3 relative"
+        className="bg-[#fdf4e3]/82 backdrop-blur-md border border-[#fc7023]/25 p-4 sm:p-5 rounded-2xl shadow-[0_20px_55px_rgba(0,0,0,0.25)] max-w-4xl w-full flex flex-col gap-4 relative"
       >
-        {/* 左侧按钮 */}
-        <button
-          type="button"
-          onClick={onSwitchMode}
-          onMouseEnter={() => setHovering(true)}
-          onMouseLeave={() => setHovering(false)}
-          className="w-full sm:w-[130px] h-[48px] bg-[#281B13] text-[#F3E2D4] border border-[#A64816] rounded-md text-base font-semibold transition-all duration-200 flex items-center justify-center gap-2"
-        >
-          {/* 手机端：图标 + 标签 */}
-          <div className="flex flex-col items-center sm:hidden">
-            <FiRepeat className="text-xl" />
-            <span className="text-[11px] font-medium mt-1">
-              {mode === "mood" ? "Roll the Reel" : "Search"}
-            </span>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="grid grid-cols-2 rounded-full bg-[#281B13]/10 p-1 text-sm font-black text-[#281B13] sm:w-[250px]">
+            <button
+              type="button"
+              onClick={mode === "mood" ? undefined : onSwitchMode}
+              className={`flex h-10 items-center justify-center gap-2 rounded-full transition ${
+                mode === "mood"
+                  ? "bg-[#281B13] text-[#F3E2D4] shadow"
+                  : "text-[#5c412f] hover:bg-white/45"
+              }`}
+            >
+              <Sparkles size={16} />
+              Mood
+            </button>
+            <button
+              type="button"
+              onClick={mode === "search" ? undefined : onSwitchMode}
+              className={`flex h-10 items-center justify-center gap-2 rounded-full transition ${
+                mode === "search"
+                  ? "bg-[#281B13] text-[#F3E2D4] shadow"
+                  : "text-[#5c412f] hover:bg-white/45"
+              }`}
+            >
+              <Search size={16} />
+              Title
+            </button>
           </div>
 
-          {/* 桌面端：完整文字 + 动画 */}
-          <span className="hidden sm:inline">
-            {hovering ? (
-              <FiRepeat className="text-lg" />
-            ) : mode === "mood" ? (
-              "Roll the Reel"
-            ) : (
-              "Search"
-            )}
-          </span>
-        </button>
+          <div className="relative flex flex-1 flex-col gap-3 sm:flex-row">
+            <input
+              type="text"
+              value={input}
+              onChange={onInputChange}
+              placeholder={
+                mode === "mood"
+                  ? "Describe the feeling you want tonight"
+                  : "Search a movie title"
+              }
+              className="h-[54px] w-full flex-1 rounded-xl border border-[#E95E1D]/70 bg-white px-5 text-[17px] text-[#281B13] placeholder:text-[#7a5c4a] focus:outline-none focus:ring-2 focus:ring-[#E95E1D]/40"
+            />
 
-        {/* 输入框 */}
-        <input
-          type="text"
-          value={input}
-          onChange={onInputChange}
-          placeholder={
-            mode === "mood"
-              ? "e.g. Something nostalgic and heartwarming"
-              : "e.g. Inception, Interstellar"
-          }
-          className="flex-1 w-full h-[58px] sm:h-[48px] px-5 text-[17px] sm:text-[16px] text-[#281B13] placeholder:text-[#7a5c4a] bg-white border border-[#E95E1D] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E95E1D]/40"
-        />
+            <button
+              type="submit"
+              disabled={loading || !input.trim()}
+              className={`h-[54px] w-full rounded-xl text-base font-black transition-all shadow sm:w-[150px] flex items-center justify-center ${
+                loading || !input.trim()
+                  ? "bg-[#E95E1D]/45 cursor-not-allowed text-white"
+                  : "bg-[#E95E1D] text-white hover:bg-[#D94F13] hover:scale-[1.02] active:scale-95"
+              }`}
+            >
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : mode === "mood" ? (
+                "Recommend"
+              ) : (
+                "Find Movie"
+              )}
+            </button>
+          </div>
+        </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className={`h-[44px] sm:h-[48px] w-full sm:w-[130px] rounded-md text-base font-semibold transition-all shadow flex items-center justify-center ${
-            loading
-              ? "bg-[#E95E1D]/60 cursor-not-allowed"
-              : "bg-[#E95E1D] text-white hover:bg-[#D94F13] hover:scale-105 active:scale-95"
-          }`}
-        >
-          {loading ? (
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          ) : mode === "mood" ? (
-            "Recommend"
-          ) : (
-            "Find Movie"
-          )}
-        </button>
+        {mode === "mood" && (
+          <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+            <span className="font-bold text-[#6f4b36]">Try:</span>
+            {moodSamples.map((sample) => (
+              <button
+                type="button"
+                key={sample}
+                onClick={() => applySample(sample)}
+                className="rounded-full border border-[#FC7023]/25 bg-white/55 px-3 py-1.5 font-semibold text-[#6b4731] transition hover:border-[#FC7023] hover:bg-white"
+              >
+                {sample}
+              </button>
+            ))}
+          </div>
+        )}
 
-        {/* 搜索建议下拉 */}
+        {/* 搜索建议 */}
         {mode === "search" && suggestions.length > 0 && (
-          <ul className="absolute top-full left-0 mt-2 w-full bg-[#1f1f25]/95 border border-[#E95E1D]/30 rounded-xl shadow-xl backdrop-blur-sm z-50 text-white max-h-[240px] overflow-y-auto transition-all duration-300">
+          <ul className="w-full bg-[#1f1f25]/95 border border-[#E95E1D]/30 rounded-xl shadow-xl backdrop-blur-sm text-white max-h-[260px] overflow-y-auto transition-all duration-300">
             {suggestions.map((movie) => (
               <li
                 key={movie.id}
-                className="flex items-center gap-3 px-4 py-2 hover:bg-[#E95E1D]/20 cursor-pointer transition-all"
+                className="flex items-center gap-3 px-4 py-3 hover:bg-[#E95E1D]/20 cursor-pointer transition-all"
                 onClick={() => onSelectSuggestion(movie)}
               >
                 {movie.poster && (

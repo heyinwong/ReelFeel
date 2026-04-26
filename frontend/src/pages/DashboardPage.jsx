@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
 import API from "../utils/api";
@@ -8,57 +8,60 @@ import TypingSummary from "../components/TypingSummary";
 import UpdateSummaryModal from "../components/UpdateSummaryModal";
 import Footer from "../components/Footer";
 import toast from "react-hot-toast";
-import { ChevronUp, ChevronDown } from "lucide-react";
+import { BrainCircuit, ChevronUp, ChevronDown, Database, Film, Lock } from "lucide-react";
 import { motion } from "framer-motion";
 import TasteCharts from "../components/TasteCharts";
+import TasteProfilePanel from "../components/TasteProfilePanel";
 
 function DashboardPage() {
   const { user, isLoading } = useAuth();
   const [summary, setSummary] = useState("");
   const [snapshots, setSnapshots] = useState([]);
   const [watched, setWatched] = useState([]);
-  const [showSummary, setShowSummary] = useState(false);
+  const [showSummary, setShowSummary] = useState(true);
   const [typingDone, setTypingDone] = useState(false);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [showSnapshots, setShowSnapshots] = useState(false);
   const [highlightTitles, setHighlightTitles] = useState([]);
+  const [profile, setProfile] = useState(null);
   const navigate = useNavigate();
 
-  const fetchSummary = async () => {
+  const fetchSummary = useCallback(async () => {
     try {
       setSummaryLoading(true);
       const res = await API.get("/taste-summary");
       setSummary(res.data.summary || "");
       setHighlightTitles(res.data.highlight_titles || []);
+      setProfile(res.data.profile || null);
     } catch (err) {
       console.error("Error fetching summary:", err);
     } finally {
       setSummaryLoading(false);
     }
-  };
+  }, []);
 
-  const fetchSnapshots = async () => {
+  const fetchSnapshots = useCallback(async () => {
     try {
       const res = await API.get("/snapshot-history");
       setSnapshots(res.data.snapshots || []);
     } catch (err) {
       console.error("Error fetching snapshots:", err);
     }
-  };
+  }, []);
 
-  const fetchWatched = async () => {
+  const fetchWatched = useCallback(async () => {
     try {
       const res = await API.get("/watched-list");
       setWatched(res.data.movies || []);
     } catch (err) {
       console.error("Error fetching watched list:", err);
     }
-  };
+  }, []);
 
-  const refreshDashboard = async () => {
+  const refreshDashboard = useCallback(async () => {
     await Promise.all([fetchSummary(), fetchSnapshots(), fetchWatched()]);
-  };
+  }, [fetchSummary, fetchSnapshots, fetchWatched]);
 
   useEffect(() => {
     if (!isLoading && user) {
@@ -66,7 +69,7 @@ function DashboardPage() {
     } else if (!isLoading && !user) {
       navigate("/login");
     }
-  }, [isLoading, user, navigate]);
+  }, [isLoading, user, navigate, refreshDashboard]);
 
   useEffect(() => {
     if (summary && !typingDone) {
@@ -80,12 +83,13 @@ function DashboardPage() {
       toast.success("Snapshot deleted.");
       refreshDashboard();
     } catch (err) {
-      toast.error("Failed to delete snapshot.");
+      toast.error(err.response?.data?.detail || "Failed to delete snapshot.");
       console.error(err);
     }
   };
 
   if (isLoading) return <div className="p-6 text-center">Loading...</div>;
+  const confidence = profile?.confidence || (snapshots.length ? "learning" : "low");
 
   return (
     <div className="min-h-screen flex flex-col bg-[#281B13] text-[#F3E2D4] overflow-x-hidden relative">
@@ -109,7 +113,7 @@ function DashboardPage() {
               animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
               transition={{ duration: 1.2, ease: "easeOut" }}
             >
-              Your Taste Dashboard
+              Taste Agent Dashboard
             </motion.h1>
 
             <motion.p
@@ -118,8 +122,24 @@ function DashboardPage() {
               animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
               transition={{ delay: 0.3, duration: 1 }}
             >
-              A reflection of your movie identity.
+              The evidence layer behind every recommendation.
             </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.45, duration: 0.6 }}
+              className="mx-auto mb-8 grid max-w-3xl grid-cols-2 gap-3 text-left sm:grid-cols-4"
+            >
+              <DashboardMetric icon={Film} label="watched" value={watched.length} />
+              <DashboardMetric icon={Database} label="snapshots" value={snapshots.length} />
+              <DashboardMetric icon={BrainCircuit} label="confidence" value={confidence} />
+              <DashboardMetric
+                icon={Lock}
+                label="access"
+                value={user?.is_demo ? "demo" : "live"}
+              />
+            </motion.div>
 
             <motion.h2
               className="text-xl font-semibold mb-3 text-[#FC7023]"
@@ -127,7 +147,7 @@ function DashboardPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5, duration: 0.8 }}
             >
-              Current AI Summary
+              Current AI Taste Summary
             </motion.h2>
 
             {!showSummary || !summary ? (
@@ -174,7 +194,7 @@ function DashboardPage() {
                   text={summary.replace(/^The user/, "You")}
                   highlightTitles={highlightTitles}
                 />
-                {typingDone && (
+                {typingDone && !user?.is_demo && (
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -189,6 +209,11 @@ function DashboardPage() {
                     </button>
                   </motion.div>
                 )}
+                {typingDone && user?.is_demo && (
+                  <p className="text-center text-xs font-bold uppercase tracking-[0.18em] text-[#F3E2D4]/70">
+                    Demo profile is read-only
+                  </p>
+                )}
               </motion.div>
             )}
           </div>
@@ -196,6 +221,7 @@ function DashboardPage() {
 
         {/* Taste Charts 区域 */}
         <div className="relative z-10 w-full px-4 sm:px-6 pt-8 max-w-6xl mx-auto">
+          <TasteProfilePanel profile={profile} />
           <TasteCharts watched={watched} />
         </div>
 
@@ -242,6 +268,19 @@ function DashboardPage() {
       )}
 
       <Footer />
+    </div>
+  );
+}
+
+function DashboardMetric({ icon, label, value }) {
+  const IconComponent = icon;
+  return (
+    <div className="rounded-xl border border-white/15 bg-black/35 px-4 py-3 backdrop-blur">
+      <IconComponent size={17} className="mb-2 text-[#FC7023]" />
+      <div className="truncate text-lg font-black text-white">{value}</div>
+      <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/55">
+        {label}
+      </div>
     </div>
   );
 }

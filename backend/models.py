@@ -75,3 +75,18 @@ class TasteSummary(Base):
     summary = Column(Text)
     highlight_titles = Column(String, nullable=True)  # stored as JSON string
     user = relationship("User", back_populates="taste_summary")
+
+
+class LlmUsage(Base):
+    __tablename__ = "llm_usage"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    task = Column(String, nullable=False)
+    tier = Column(String, nullable=False)
+    model = Column(String, nullable=False)
+    prompt_tokens = Column(Integer, default=0)
+    completion_tokens = Column(Integer, default=0)
+    total_tokens = Column(Integer, default=0)
+    estimated_cost_usd = Column(Float, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

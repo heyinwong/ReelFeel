@@ -3,6 +3,8 @@ backend/venv/
 backend/venv_reelfeel
 backend/__pycache__/
 *.pyc
+*.db
+.playwright-cli/
 
 # --- Node.js ---
 frontend/node_modules/

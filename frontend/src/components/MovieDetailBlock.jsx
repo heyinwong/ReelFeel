@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
-import { FiZap } from "react-icons/fi"; // AI insight 图标
+import { Link } from "react-router-dom";
+import { FiLogIn, FiZap } from "react-icons/fi";
 
-function MovieDetailBlock({ movie, onAdd, mode }) {
+function MovieDetailBlock({ movie, user, onAdd, mode }) {
   if (!movie) return null;
 
   return (
@@ -11,9 +12,6 @@ function MovieDetailBlock({ movie, onAdd, mode }) {
       transition={{ duration: 0.6, ease: "easeOut" }}
       className="bg-gradient-to-br from-[#FAEFE0] to-[#F3E2D4] text-[#281B13] mt-14 rounded-3xl shadow-[0_8px_24px_rgba(252,112,35,0.15)] px-4 sm:px-10 py-6 sm:py-8 max-w-4xl mx-auto relative overflow-hidden border border-[#FC7023]/30 backdrop-blur-md"
     >
-      {/* 背景点缀纹理 */}
-      <div className="absolute inset-0 opacity-5 bg-[url('/film-texture.png')] bg-repeat pointer-events-none" />
-
       {/* 标题 */}
       <h3 className="text-2xl sm:text-3xl font-extrabold mb-2 tracking-wide text-center break-words overflow-wrap-anywhere">
         {movie.title}
@@ -31,7 +29,42 @@ function MovieDetailBlock({ movie, onAdd, mode }) {
       </p>
 
       {mode === "mood" &&
-        (movie.reason && movie.reason.trim() !== "" ? (
+        (!user ? (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{
+              duration: 0.5,
+              type: "spring",
+              stiffness: 80,
+              damping: 12,
+              delay: 0.2,
+            }}
+            className="relative bg-[#fdf4ed] border border-dashed border-[#FC7023]/45 rounded-[18px] px-6 pt-6 pb-5 mt-6 mb-8 shadow-sm"
+          >
+            <motion.div
+              initial={{ x: -10, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.4, duration: 0.3 }}
+              className="absolute -top-3 left-0 bg-[#281B13] text-[#F3E2D4] text-xs font-bold px-3 py-1 rounded-br-xl rounded-tl-lg tracking-wide shadow-md"
+            >
+              <FiLogIn className="inline-block mr-1 -mt-0.5" />
+              Taste Insight Locked
+            </motion.div>
+
+            <p className="text-sm sm:text-base text-[#4b3a2f] leading-relaxed mt-2">
+              Log in to turn this recommendation into a personal AI taste
+              insight based on your ratings, reviews, and watch history.
+            </p>
+            <Link
+              to="/login"
+              className="inline-flex items-center gap-2 mt-4 text-sm font-bold text-[#FC7023] hover:text-orange-600"
+            >
+              <FiLogIn />
+              Log in for personal insight
+            </Link>
+          </motion.div>
+        ) : movie.reason && movie.reason.trim() !== "" ? (
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -64,6 +97,21 @@ function MovieDetailBlock({ movie, onAdd, mode }) {
             >
               {movie.reason}
             </motion.p>
+            <div className="flex flex-wrap items-center gap-2 mt-4">
+              {(movie.taste_match_tags || []).map((tag) => (
+                <span
+                  key={tag}
+                  className="text-xs px-2 py-1 rounded-full bg-[#FC7023]/15 border border-[#FC7023]/30 text-[#4b3a2f]"
+                >
+                  {tag}
+                </span>
+              ))}
+              {movie.confidence && (
+                <span className="text-xs px-2 py-1 rounded-full bg-[#281B13]/10 text-[#4b3a2f]/75">
+                  {movie.confidence} confidence
+                </span>
+              )}
+            </div>
           </motion.div>
         ) : (
           <motion.div
