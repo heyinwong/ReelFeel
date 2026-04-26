@@ -27,6 +27,18 @@ const sampleProfile = {
   highlight_titles: ["Yi Yi", "Aftersun", "Arrival", "Past Lives"],
 };
 
+const emptyProfile = {
+  summary: "",
+  confidence: "low",
+  preference_axes: {},
+  liked_patterns: [],
+  disliked_patterns: [],
+  favorite_genres: [],
+  favorite_directors: [],
+  favorite_eras: [],
+  highlight_titles: [],
+};
+
 function TasteAgentConsole({
   user,
   loading,
@@ -35,7 +47,7 @@ function TasteAgentConsole({
   variant = "compact",
   className = "",
 }) {
-  const [profile, setProfile] = useState(sampleProfile);
+  const [profile, setProfile] = useState(user ? emptyProfile : sampleProfile);
   const [snapshotCount, setSnapshotCount] = useState(0);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
 
@@ -52,10 +64,12 @@ function TasteAgentConsole({
         API.get("/taste-summary"),
         API.get("/snapshot-history"),
       ]);
-      setProfile(summaryRes.data.profile || sampleProfile);
+      setProfile(normalizeProfile(summaryRes.data.profile));
       setSnapshotCount(snapshotsRes.data.snapshots?.length || 0);
     } catch (err) {
       console.error("Failed to load taste agent console:", err);
+      setProfile(emptyProfile);
+      setSnapshotCount(0);
     } finally {
       setIsProfileLoading(false);
     }
@@ -65,9 +79,22 @@ function TasteAgentConsole({
     fetchAgentData();
   }, [fetchAgentData]);
 
-  const agentSteps = useMemo(
-    () => [
-      { label: "Taste memory", active: Boolean(user), done: Boolean(user) },
+  const hasTasteReason = Boolean(user && currentMovie?.reason);
+  const hasTasteMemory = Boolean(user && (snapshotCount > 0 || profile.summary));
+  const isTitleLookup = Boolean(currentMovie && !currentMovie.reason);
+
+  const agentSteps = useMemo(() => {
+    if (isTitleLookup) {
+      return [
+        { label: "Title lookup", active: false, done: true },
+        { label: "TMDB detail", active: false, done: true },
+        { label: "Taste memory", active: false, done: hasTasteMemory },
+        { label: "Mood rerank", active: false, done: false },
+      ];
+    }
+
+    return [
+      { label: "Taste memory", active: Boolean(user), done: hasTasteMemory },
       {
         label: "Candidate pool",
         active: loading,
@@ -76,16 +103,23 @@ function TasteAgentConsole({
       {
         label: user ? "Taste rerank" : "Personal context",
         active: loading && Boolean(user),
-        done: Boolean(user && currentMovie?.reason),
+        done: hasTasteReason,
       },
       {
         label: "Explanation",
         active: false,
-        done: Boolean(user && currentMovie?.reason),
+        done: hasTasteReason,
       },
-    ],
-    [currentMovie, hasRecommendations, loading, user]
-  );
+    ];
+  }, [
+    currentMovie,
+    hasRecommendations,
+    hasTasteMemory,
+    hasTasteReason,
+    isTitleLookup,
+    loading,
+    user,
+  ]);
 
   if (variant === "side") {
     return (
@@ -104,7 +138,11 @@ function TasteAgentConsole({
               Taste Agent
             </p>
             <h3 className="text-lg font-black leading-tight">
-              Why this fits
+              {hasTasteReason
+                ? "Why this fits"
+                : isTitleLookup
+                  ? "Lookup details"
+                  : "How it works"}
             </h3>
           </div>
         </div>
@@ -128,7 +166,7 @@ function TasteAgentConsole({
                   {step.label}
                 </div>
                 <div className="text-xs leading-relaxed text-[#F3E2D4]/48">
-                  {stepDescription(step.label, user)}
+                  {stepDescription(step.label, user, hasTasteMemory)}
                 </div>
               </div>
             </div>
@@ -145,7 +183,9 @@ function TasteAgentConsole({
               {user && currentMovie.reason
                 ? currentMovie.reason
                 : user
-                  ? "Title search shows the movie first. Use Mood mode when you want taste-based reasoning."
+                  ? hasTasteMemory
+                    ? "Title search returns the exact movie first. Switch to Mood when you want TMDB candidates reranked against your taste profile."
+                    : "Title search returns the exact movie first. Add a few reviews, then Mood mode can rerank candidates against your taste."
                   : "Log in to connect recommendations to your own ratings, moods, and reviews."}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -189,7 +229,7 @@ function TasteAgentConsole({
               </p>
               <p className="truncate text-sm leading-relaxed text-[#F3E2D4]/76 sm:text-base">
                 {user
-                  ? compactSummary(profile.summary)
+                  ? compactSummary(profile.summary, snapshotCount)
                   : "Try the demo to see recommendations grounded in a real watch history."}
               </p>
             </div>
@@ -197,13 +237,28 @@ function TasteAgentConsole({
 
           <div className="flex flex-wrap gap-2 sm:justify-end">
             <Metric icon={Database} label="memories" value={user ? snapshotCount : "demo"} />
-            <Metric icon={Film} label="highlights" value={(profile.highlight_titles || []).length || 4} />
+            <Metric icon={Film} label="highlights" value={highlightCount(profile, user)} />
             <Metric icon={Route} label="route" value={user ? "TMDB + LLM" : "sample"} />
           </div>
         </div>
       </div>
     </motion.section>
   );
+}
+
+function normalizeProfile(profile) {
+  if (!profile || typeof profile !== "object") return emptyProfile;
+  return {
+    ...emptyProfile,
+    ...profile,
+    preference_axes: profile.preference_axes || {},
+    liked_patterns: profile.liked_patterns || [],
+    disliked_patterns: profile.disliked_patterns || [],
+    favorite_genres: profile.favorite_genres || [],
+    favorite_directors: profile.favorite_directors || [],
+    favorite_eras: profile.favorite_eras || [],
+    highlight_titles: profile.highlight_titles || [],
+  };
 }
 
 function Metric({ icon, label, value }) {
@@ -219,20 +274,35 @@ function Metric({ icon, label, value }) {
   );
 }
 
-function compactSummary(summary = "") {
+function compactSummary(summary = "", snapshotCount = 0) {
+  if (!summary.trim()) {
+    return snapshotCount > 0
+      ? "Your taste memory is processing recent logs into a profile."
+      : "No taste memory yet. Add a film or write a review to build your profile.";
+  }
   const firstSentence = summary.split(". ")[0];
-  return firstSentence || sampleProfile.summary;
+  return firstSentence;
 }
 
-function stepDescription(label, user) {
+function highlightCount(profile, user) {
+  const count = (profile.highlight_titles || []).length;
+  return user ? count : count || 4;
+}
+
+function stepDescription(label, user, hasTasteMemory) {
   const descriptions = {
     "Taste memory": user
-      ? "Uses your reviews, moods, and ratings."
+      ? hasTasteMemory
+        ? "Uses your reviews, moods, and ratings."
+        : "Add reviews to create a personal profile."
       : "Guest mode has no personal history yet.",
     "Candidate pool": "Retrieves real movies from TMDB first.",
     "Taste rerank": "Ranks candidates against your profile.",
     "Personal context": "Login adds your own taste memory.",
     Explanation: "Turns the match into a short reason.",
+    "Title lookup": "Finds the movie you typed directly.",
+    "TMDB detail": "Loads cast, score, poster, and overview.",
+    "Mood rerank": "Available when you search by feeling.",
   };
   return descriptions[label] || "";
 }

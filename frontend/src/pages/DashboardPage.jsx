@@ -252,7 +252,7 @@ function DashboardPage() {
             >
               <SnapShotList
                 snapshots={snapshots}
-                onDelete={handleSnapshotDelete}
+                onDelete={user?.is_demo ? undefined : handleSnapshotDelete}
               />
             </motion.div>
           )}

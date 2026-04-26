@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from dotenv import load_dotenv
 
@@ -11,6 +12,11 @@ load_dotenv(dotenv_path=ENV_PATH, override=True)
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
     f"sqlite+aiosqlite:///{BACKEND_DIR / 'app.db'}",
+)
+APP_ENV = os.getenv("APP_ENV", "development").lower()
+CORS_ORIGINS = os.getenv(
+    "CORS_ORIGINS",
+    "http://localhost:5173,http://127.0.0.1:5173,http://127.0.0.1:5174",
 )
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 TMDB_API_KEY = os.getenv("TMDB_API_KEY")
@@ -34,6 +40,11 @@ OPENAI_STANDARD_INPUT_COST_PER_1M = float(os.getenv("OPENAI_STANDARD_INPUT_COST_
 OPENAI_STANDARD_OUTPUT_COST_PER_1M = float(os.getenv("OPENAI_STANDARD_OUTPUT_COST_PER_1M", "1.60"))
 
 
+def parse_cors_origins(raw_origins: str | None = None) -> list[str]:
+    origins = raw_origins if raw_origins is not None else CORS_ORIGINS
+    return [origin.strip() for origin in origins.split(",") if origin.strip()]
+
+
 def resolve_database_url(raw_url: str | None = None) -> str:
     url = raw_url or DATABASE_URL
     for prefix in ("sqlite+aiosqlite:///", "sqlite:///"):
@@ -41,4 +52,44 @@ def resolve_database_url(raw_url: str | None = None) -> str:
             db_path = url.removeprefix(prefix)
             if db_path.startswith("./"):
                 return f"{prefix}{BACKEND_DIR / db_path.removeprefix('./')}"
+
+    if url.startswith(("postgresql://", "postgres://")):
+        parsed = urlsplit(url)
+        query_items = []
+        for key, value in parse_qsl(parsed.query, keep_blank_values=True):
+            if key == "sslmode":
+                if value and value != "disable":
+                    query_items.append(("ssl", "require"))
+            elif key != "channel_binding":
+                query_items.append((key, value))
+
+        return urlunsplit(
+            (
+                "postgresql+asyncpg",
+                parsed.netloc,
+                parsed.path,
+                urlencode(query_items),
+                parsed.fragment,
+            )
+        )
+
     return url
+
+
+def validate_production_config() -> None:
+    if APP_ENV != "production":
+        return
+
+    missing = []
+    if not OPENAI_API_KEY:
+        missing.append("OPENAI_API_KEY")
+    if not TMDB_API_KEY:
+        missing.append("TMDB_API_KEY")
+    if MOVIE_PASS_KEY == "dev-only-change-me":
+        missing.append("MOVIE_PASS_KEY")
+    if DEMO_ENABLED and DEMO_ACCESS_CODE == "local-demo-code":
+        missing.append("DEMO_ACCESS_CODE")
+
+    if missing:
+        names = ", ".join(missing)
+        raise RuntimeError(f"Production config is missing safe values for: {names}")

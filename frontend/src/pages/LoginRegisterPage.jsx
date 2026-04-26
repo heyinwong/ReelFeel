@@ -64,16 +64,21 @@ function LoginRegisterPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="text-white text-2xl font-semibold px-8 text-center"
+          className="max-w-md px-8 text-center"
         >
-          {isLogin
-            ? "Pick up where you left off."
-            : "Begin your reel journey today."}
+          <p className="mb-3 text-xs font-black uppercase tracking-[0.26em] text-[#FC7023]">
+            ReelFeel
+          </p>
+          <p className="text-2xl font-semibold leading-tight text-white drop-shadow">
+            {isLogin
+              ? "Pick up where your taste memory left off."
+              : "Build a profile from the films that stay with you."}
+          </p>
         </motion.div>
       </div>
 
       {/* Right form panel */}
-      <div className="flex flex-col justify-center items-center w-full md:w-1/2 bg-gradient-to-br from-[#fdfbfb] to-[#ebedee] px-6">
+      <div className="flex flex-col justify-center items-center w-full md:w-1/2 bg-[#281B13] px-6 py-12 text-[#F3E2D4]">
         <AnimatePresence mode="wait">
           <motion.form
             key={isLogin ? "login-form" : "register-form"}
@@ -82,17 +87,17 @@ function LoginRegisterPage() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -40 }}
             transition={{ duration: 0.5 }}
-            className="relative bg-white shadow-xl border border-gray-300 rounded-xl px-8 py-10 w-full max-w-md"
+            className="relative w-full max-w-md rounded-2xl border border-[#FC7023]/30 bg-[#F3E2D4] px-6 py-8 text-[#281B13] shadow-[0_24px_70px_rgba(0,0,0,0.28)] sm:px-8 sm:py-10"
           >
-            <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-20 h-2 bg-black rounded" />
+            <div className="absolute -top-2 left-1/2 h-2 w-20 -translate-x-1/2 rounded bg-[#FC7023]" />
 
             <h2 className="text-2xl font-bold text-center mb-1">
-              {isLogin ? "Log In to ReelFeel" : "Register an Account"}
+              {isLogin ? "Log In to ReelFeel" : "Create Your ReelFeel Account"}
             </h2>
             <p className="text-sm text-gray-500 text-center mb-6">
               {isLogin
-                ? "Welcome back — time for a new recommendation."
-                : "Start tracking your movie moods today!"}
+                ? "Welcome back. Your taste agent is ready for a new signal."
+                : "Log films, rate reactions, and build a taste profile."}
             </p>
 
             {errorMsg && (
@@ -107,7 +112,7 @@ function LoginRegisterPage() {
               autoComplete="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded mb-3 focus:outline-none focus:ring focus:border-blue-400"
+              className="mb-3 w-full rounded-lg border border-[#d8bd9f] bg-white px-4 py-2 text-[#281B13] focus:border-[#FC7023] focus:outline-none focus:ring-2 focus:ring-[#FC7023]/25"
             />
             <div className="relative mb-4">
               <input
@@ -116,7 +121,7 @@ function LoginRegisterPage() {
                 autoComplete={isLogin ? "current-password" : "new-password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 pr-11 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
+                className="w-full rounded-lg border border-[#d8bd9f] bg-white px-4 py-2 pr-11 text-[#281B13] focus:border-[#FC7023] focus:outline-none focus:ring-2 focus:ring-[#FC7023]/25"
               />
               <button
                 type="button"
@@ -131,7 +136,7 @@ function LoginRegisterPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-black text-white py-2 rounded hover:bg-gray-800 transition disabled:opacity-60"
+              className="w-full rounded-lg bg-[#281B13] py-2 font-semibold text-[#F3E2D4] transition hover:bg-[#3a281d] disabled:opacity-60"
             >
               {isSubmitting ? "Working..." : isLogin ? "Log In" : "Register"}
             </button>
@@ -139,7 +144,7 @@ function LoginRegisterPage() {
             <button
               type="button"
               onClick={handleDemoClick}
-              className="mt-3 w-full border border-[#FC7023] text-[#281B13] py-2 rounded font-semibold hover:bg-[#FC7023]/10 transition flex items-center justify-center gap-2"
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-[#FC7023] py-2 font-semibold text-[#281B13] transition hover:bg-[#FC7023]/10"
             >
               <PlayCircle size={18} />
               Try Live Demo
@@ -152,7 +157,7 @@ function LoginRegisterPage() {
                   <button
                     type="button"
                     onClick={() => setIsLogin(false)}
-                    className="text-blue-500 hover:underline"
+                    className="font-semibold text-[#C84E14] hover:underline"
                   >
                     Register
                   </button>
@@ -163,7 +168,7 @@ function LoginRegisterPage() {
                   <button
                     type="button"
                     onClick={() => setIsLogin(true)}
-                    className="text-blue-500 hover:underline"
+                    className="font-semibold text-[#C84E14] hover:underline"
                   >
                     Log In
                   </button>

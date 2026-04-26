@@ -1,5 +1,6 @@
 import unittest
 
+import config
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 
@@ -9,7 +10,9 @@ from config import (
     DEMO_USERNAME,
     OPENAI_MODEL_CHEAP,
     OPENAI_MODEL_STANDARD,
+    parse_cors_origins,
     resolve_database_url,
+    validate_production_config,
 )
 from database import async_session
 from main import app
@@ -37,6 +40,51 @@ class FoundationTests(unittest.IsolatedAsyncioTestCase):
     def test_relative_sqlite_url_resolves_under_backend(self):
         resolved = resolve_database_url("sqlite+aiosqlite:///./app.db")
         self.assertTrue(resolved.endswith("/backend/app.db"))
+
+    def test_postgres_url_resolves_to_asyncpg_driver(self):
+        resolved = resolve_database_url(
+            "postgresql://user:pass@example.neon.tech/db?sslmode=require&channel_binding=require"
+        )
+        self.assertEqual(
+            resolved,
+            "postgresql+asyncpg://user:pass@example.neon.tech/db?ssl=require",
+        )
+
+    def test_legacy_postgres_scheme_resolves_to_asyncpg_driver(self):
+        resolved = resolve_database_url("postgres://user:pass@example.com/db")
+        self.assertEqual(resolved, "postgresql+asyncpg://user:pass@example.com/db")
+
+    def test_cors_origins_parse_comma_separated_values(self):
+        origins = parse_cors_origins("https://app.example.com, http://localhost:5173,")
+        self.assertEqual(origins, ["https://app.example.com", "http://localhost:5173"])
+
+    def test_health_endpoint_returns_ok(self):
+        with TestClient(app) as client:
+            response = client.get("/health")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"status": "ok"})
+
+    def test_production_config_rejects_unsafe_defaults(self):
+        original = {
+            "APP_ENV": config.APP_ENV,
+            "OPENAI_API_KEY": config.OPENAI_API_KEY,
+            "TMDB_API_KEY": config.TMDB_API_KEY,
+            "MOVIE_PASS_KEY": config.MOVIE_PASS_KEY,
+            "DEMO_ACCESS_CODE": config.DEMO_ACCESS_CODE,
+        }
+        config.APP_ENV = "production"
+        config.OPENAI_API_KEY = None
+        config.TMDB_API_KEY = None
+        config.MOVIE_PASS_KEY = "dev-only-change-me"
+        config.DEMO_ACCESS_CODE = "local-demo-code"
+        try:
+            with self.assertRaises(RuntimeError) as exc:
+                validate_production_config()
+        finally:
+            for key, value in original.items():
+                setattr(config, key, value)
+        self.assertIn("OPENAI_API_KEY", str(exc.exception))
+        self.assertIn("DEMO_ACCESS_CODE", str(exc.exception))
 
     def test_title_normalization_for_duplicate_filtering(self):
         self.assertEqual(normalize_title("Amélie! (2001)"), "amélie 2001")

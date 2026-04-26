@@ -1,6 +1,6 @@
-# ReelFeel: AI Taste Agent for Movie Discovery
+# ReelFeel: Deployable AI Taste Agent for Movie Discovery
 
-ReelFeel is a portfolio-grade full-stack AI project that turns movie logs into a structured taste profile, retrieves TMDB candidates, and uses low-cost LLM reranking to explain why a film fits you.
+ReelFeel is a deployment-ready portfolio demo that turns movie logs into a structured taste profile, retrieves TMDB candidates, and uses low-cost LLM reranking to explain why a film fits you.
 
 It is designed to show:
 
@@ -9,6 +9,7 @@ It is designed to show:
 - JWT-scoped user data and a read-only live demo account
 - AI usage logging with estimated token cost
 - A product-facing Taste Agent Console that makes the recommendation logic visible
+- Production-oriented deployment path for Vercel + Render + Neon Postgres
 
 ## Design Philosophy
 
@@ -86,7 +87,7 @@ The system acts like an AI agent: observing how you respond to films and gradual
 | Layer     | Technology                                                        |
 | --------- | ----------------------------------------------------------------- |
 | Frontend  | React (Vite), TailwindCSS, Framer Motion (animations)             |
-| Backend   | FastAPI, SQLite, Async SQLAlchemy, Pydantic                       |
+| Backend   | FastAPI, Async SQLAlchemy, Pydantic, SQLite local / Postgres deploy |
 | Auth      | JWT (token-based auth), bcrypt (password hashing)                 |
 | AI Logic  | OpenAI(recommendation, taste modeling), TMDB API (movie data)     |
 | UI Design | Retro film-inspired theme, responsive layout, animated components |
@@ -138,6 +139,8 @@ The backend loads `backend/.env` directly. Start from `backend/.env.example`:
 
 ```env
 DATABASE_URL=sqlite+aiosqlite:///./app.db
+APP_ENV=development
+CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 OPENAI_API_KEY=your_openai_key
 TMDB_API_KEY=your_tmdb_key
 MOVIE_PASS_KEY=your_jwt_secret_key
@@ -167,6 +170,70 @@ VITE_BACKEND_URL=http://localhost:8000
 VITE_DEMO_ACCESS_CODE=your_demo_magic_link_code
 ```
 
+## Deployment
+
+The intended portfolio deployment is:
+
+- Frontend: Vercel
+- Backend: Render Web Service
+- Database: Neon Postgres
+
+### Neon
+
+Create a Neon Postgres database and copy its connection string. If Neon gives a URL like:
+
+```env
+postgresql://user:password@host/db?sslmode=require&channel_binding=require
+```
+
+ReelFeel will normalize it at runtime to SQLAlchemy's asyncpg format.
+
+### Render Backend
+
+Create a Render Web Service from this repository with:
+
+```text
+Root Directory: backend
+Build Command: pip install -r requirements.txt
+Start Command: PYTHONPATH=. uvicorn main:app --host 0.0.0.0 --port $PORT
+Health Check Path: /health
+```
+
+Set Render environment variables:
+
+```env
+APP_ENV=production
+DATABASE_URL=<neon-postgres-url>
+OPENAI_API_KEY=<openai-key>
+TMDB_API_KEY=<tmdb-key>
+MOVIE_PASS_KEY=<openssl-rand-hex-32>
+DEMO_ENABLED=true
+DEMO_USERNAME=reelfeel_demo
+DEMO_ACCESS_CODE=<long-random-demo-code>
+CORS_ORIGINS=https://<your-vercel-domain>
+```
+
+`APP_ENV=production` intentionally refuses unsafe defaults, missing API keys, and the local demo code.
+
+### Vercel Frontend
+
+Create a Vercel project from this repository with:
+
+```text
+Root Directory: frontend
+Build Command: npm run build
+Output Directory: dist
+```
+
+Set Vercel environment variables:
+
+```env
+VITE_BACKEND_URL=https://<your-render-backend-domain>
+VITE_DEMO_ACCESS_CODE=<same-long-demo-code-as-render>
+```
+
+`frontend/vercel.json` rewrites all routes to `/` so direct visits to `/demo`, `/dashboard`, `/watched`, and `/waiting` work with React Router.
+
 ## Demo Walkthrough
 
 1. Open `/demo?code=<DEMO_ACCESS_CODE>` to enter the read-only showcase account.
@@ -175,6 +242,8 @@ VITE_DEMO_ACCESS_CODE=your_demo_magic_link_code
 4. Inspect the carousel: the center card is the main recommendation, and the console explains the match.
 5. Visit Dashboard to see the structured taste profile, preference axes, snapshots, and charts.
 6. Try adding or editing a movie to see the read-only demo protection.
+
+For portfolio review, the recommended path is: Demo link → Mood recommendation → title lookup → Dashboard taste profile → Reel Log modal → read-only action toast.
 
 ## Architecture Flow
 
@@ -190,6 +259,20 @@ TMDB Candidate Pool
 Low-Cost LLM Rerank
         ↓
 Explainable Recommendation + AI Usage Logging
+```
+
+At runtime, the recommender follows this sequence:
+
+```text
+User mood
+        ↓
+Taste profile search terms
+        ↓
+TMDB candidate retrieval
+        ↓
+Low-cost LLM rerank
+        ↓
+3 explained recommendations
 ```
 
 ## What This Demonstrates
@@ -213,7 +296,7 @@ Explainable Recommendation + AI Usage Logging
   ├── database.py           # Async SQLite setup
   ├── models.py             # SQLAlchemy ORM models
   ├── main.py               # FastAPI app assembly
-  └── app.db                # Local SQLite database
+  └── app.db                # Local SQLite database, ignored by git
 
 /frontend
   ├── assets/               # Static assets
@@ -224,13 +307,10 @@ Explainable Recommendation + AI Usage Logging
 
 ## Status
 
-ReelFeel is being refactored into a low-cost AI Taste Agent foundation. The current focus is reliable local development, JWT-scoped user data, structured taste profiles, TMDB-backed recommendation candidates, and transparent AI usage/cost tracking.
+ReelFeel is ready for a Portfolio Ready deployment. The core product loop, read-only demo account, TMDB retrieval, low-cost OpenAI reranking, AI usage logging, and deployment configuration are in place.
 
-**Plans:**
+The next non-code step is creating the Neon, Render, and Vercel resources, setting the production environment variables above, and running the smoke test checklist.
 
-- Exclude movies already in the waiting list from AI recommendations
-- Improve title matching accuracy to avoid wrong movie retrievals from TMDB
-- Add subtle UI animations and polish
-- Expand the Dashboard with more insights and interactive feedback
-- Support for demo user access before final deployment
-- transfer SQLlite to postgreSQL for deployment reason
+## Attribution
+
+This product uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.

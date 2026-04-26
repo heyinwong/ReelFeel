@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from auth import router as auth_router
-from config import DEMO_ENABLED
+from config import DEMO_ENABLED, parse_cors_origins, validate_production_config
 from database import async_session, init_db
 from routers import movies, recommendations, taste, tmdb, usage
 from services.demo_service import ensure_demo_account
@@ -12,6 +12,7 @@ from services.demo_service import ensure_demo_account
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    validate_production_config()
     print("🌱 Initializing DB...")
     await init_db()
     if DEMO_ENABLED:
@@ -26,11 +27,17 @@ app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=parse_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
 
 app.include_router(auth_router)
 app.include_router(movies.router)
