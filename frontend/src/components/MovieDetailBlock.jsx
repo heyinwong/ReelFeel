@@ -4,6 +4,7 @@ import { FiLogIn, FiZap } from "react-icons/fi";
 
 function MovieDetailBlock({ movie, user, onAdd, mode }) {
   if (!movie) return null;
+  const isDemo = Boolean(user?.is_demo);
 
   return (
     <motion.div
@@ -153,22 +154,37 @@ function MovieDetailBlock({ movie, user, onAdd, mode }) {
       {/* 按钮区 */}
       <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-4">
         <motion.button
-          whileHover={{ scale: 1.05, y: -2 }}
-          whileTap={{ scale: 0.97 }}
-          className="w-full sm:w-auto bg-[#FC7023] hover:bg-orange-600 text-white px-6 py-2.5 rounded-full font-bold transition-all duration-200 shadow-md text-center"
-          onClick={() => onAdd(movie, "watched")}
+          whileHover={isDemo ? undefined : { scale: 1.05, y: -2 }}
+          whileTap={isDemo ? undefined : { scale: 0.97 }}
+          disabled={isDemo}
+          className={`w-full sm:w-auto px-6 py-2.5 rounded-full font-bold transition-all duration-200 shadow-md text-center ${
+            isDemo
+              ? "cursor-not-allowed bg-[#281B13]/25 text-[#281B13]/55 shadow-none"
+              : "bg-[#FC7023] hover:bg-orange-600 text-white"
+          }`}
+          onClick={() => !isDemo && onAdd(movie, "watched")}
         >
           + Add to Reel Log
         </motion.button>
         <motion.button
-          whileHover={{ scale: 1.05, y: -2 }}
-          whileTap={{ scale: 0.97 }}
-          className="w-full sm:w-auto bg-[#FC7023] hover:bg-orange-600 text-white px-6 py-2.5 rounded-full font-bold transition-all duration-200 shadow-md text-center"
-          onClick={() => onAdd(movie, "waiting")}
+          whileHover={isDemo ? undefined : { scale: 1.05, y: -2 }}
+          whileTap={isDemo ? undefined : { scale: 0.97 }}
+          disabled={isDemo}
+          className={`w-full sm:w-auto px-6 py-2.5 rounded-full font-bold transition-all duration-200 shadow-md text-center ${
+            isDemo
+              ? "cursor-not-allowed bg-[#281B13]/25 text-[#281B13]/55 shadow-none"
+              : "bg-[#FC7023] hover:bg-orange-600 text-white"
+          }`}
+          onClick={() => !isDemo && onAdd(movie, "waiting")}
         >
           + Add to Watchlist
         </motion.button>
       </div>
+      {isDemo && (
+        <p className="mt-3 text-center text-xs font-semibold uppercase tracking-[0.18em] text-[#281B13]/55">
+          Demo account is read-only
+        </p>
+      )}
     </motion.div>
   );
 }
