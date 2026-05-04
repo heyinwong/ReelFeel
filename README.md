@@ -2,13 +2,18 @@
 
 ReelFeel is a deployment-ready portfolio demo that turns movie logs into a structured taste profile, retrieves TMDB candidates, and uses low-cost LLM reranking to explain why a film fits you.
 
+Live portfolio demo:
+
+- Frontend: https://reel-feel.vercel.app
+- Backend health check: https://reelfeel-api.onrender.com/health
+
 It is designed to show:
 
 - Hybrid TMDB retrieval + low-cost LLM reranking
 - Structured taste memory from ratings, reviews, moods, and watch history
 - JWT-scoped user data and a read-only live demo account
 - AI usage logging with estimated token cost
-- A product-facing Taste Agent Console that makes the recommendation logic visible
+- A product-facing Taste Agent Console that makes recommendation logic and title-search taste fit visible
 - Production-oriented deployment path for Vercel + Render + Neon Postgres
 
 ## Design Philosophy
@@ -31,7 +36,7 @@ The system acts like an AI agent: observing how you respond to films and gradual
 - Magic demo link support: `/demo?code=<DEMO_ACCESS_CODE>`
 - Demo account is seeded with curated watched movies, reviews, snapshots, and a high-confidence taste profile
 - Demo account is read-only, so visitors can explore without damaging the showcase data
-- Taste Agent Console shows profile confidence, memory count, AI cost, match tags, and recommendation reasoning
+- Taste Agent Console shows profile confidence, memory count, match tags, recommendation reasoning, and title-search fit estimates
 
 ### Personalized AI Recommendation
 
@@ -240,8 +245,9 @@ VITE_DEMO_ACCESS_CODE=<same-long-demo-code-as-render>
 2. Scan the Taste Agent Console on the homepage to see the seeded taste memory.
 3. Ask for a mood, for example `quiet emotional family drama`.
 4. Inspect the carousel: the center card is the main recommendation, and the console explains the match.
-5. Visit Dashboard to see the structured taste profile, preference axes, snapshots, and charts.
-6. Try adding or editing a movie to see the read-only demo protection.
+5. Switch to Title search and look up a known film; the console shows exact TMDB lookup plus a transparent taste-fit estimate from profile overlap.
+6. Visit Dashboard to see the structured taste profile, preference axes, snapshots, and charts.
+7. Try adding or editing a movie to see the read-only demo protection.
 
 For portfolio review, the recommended path is: Demo link → Mood recommendation → title lookup → Dashboard taste profile → Reel Log modal → read-only action toast.
 
@@ -275,6 +281,20 @@ Low-cost LLM rerank
 3 explained recommendations
 ```
 
+Title search uses a different, intentionally lighter path:
+
+```text
+Typed title
+        ↓
+Exact TMDB lookup
+        ↓
+Movie detail card
+        ↓
+Heuristic taste-fit estimate from genre/director/rating overlap
+```
+
+This keeps the product honest: Mood mode performs LLM reranking, while Title mode answers "is this the film I searched for?" and then gives a transparent fit signal when the viewer has taste memory.
+
 ## What This Demonstrates
 
 - Full-stack product architecture with React, FastAPI, SQLAlchemy, and JWT auth
@@ -307,9 +327,15 @@ Low-cost LLM rerank
 
 ## Status
 
-ReelFeel is ready for a Portfolio Ready deployment. The core product loop, read-only demo account, TMDB retrieval, low-cost OpenAI reranking, AI usage logging, and deployment configuration are in place.
+ReelFeel is deployed as a Portfolio Ready demo on Vercel + Render + Neon.
 
-The next non-code step is creating the Neon, Render, and Vercel resources, setting the production environment variables above, and running the smoke test checklist.
+Current production smoke coverage includes health check, demo login, Mood recommendation, Title search, Dashboard profile/charts, demo read-only actions, normal registration/login, and adding a movie to Watchlist.
+
+Known product polish queue:
+
+- Continue visual refinement across the homepage recommendation area, Login, About, Dashboard, and modal forms.
+- Refresh screenshots or add a short walkthrough GIF after the next visual pass.
+- Add deeper deterministic tests around invalid LLM JSON and TMDB edge cases.
 
 ## Attribution
 

@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Database,
   Film,
+  HeartHandshake,
   Route,
 } from "lucide-react";
 import API from "../utils/api";
@@ -82,14 +83,21 @@ function TasteAgentConsole({
   const hasTasteReason = Boolean(user && currentMovie?.reason);
   const hasTasteMemory = Boolean(user && (snapshotCount > 0 || profile.summary));
   const isTitleLookup = Boolean(currentMovie && !currentMovie.reason);
+  const titleFit = useMemo(
+    () => estimateTitleFit(currentMovie, profile, user, hasTasteMemory),
+    [currentMovie, hasTasteMemory, profile, user],
+  );
 
   const agentSteps = useMemo(() => {
     if (isTitleLookup) {
       return [
         { label: "Title lookup", active: false, done: true },
         { label: "TMDB detail", active: false, done: true },
-        { label: "Taste memory", active: false, done: hasTasteMemory },
-        { label: "Mood rerank", active: false, done: false },
+        {
+          label: user ? "Taste fit estimate" : "Personal context",
+          active: false,
+          done: Boolean(titleFit),
+        },
       ];
     }
 
@@ -118,6 +126,7 @@ function TasteAgentConsole({
     hasTasteReason,
     isTitleLookup,
     loading,
+    titleFit,
     user,
   ]);
 
@@ -129,7 +138,7 @@ function TasteAgentConsole({
         transition={{ duration: 0.45, ease: "easeOut" }}
         className={`rounded-3xl border border-[#FC7023]/25 bg-[#1c120d]/82 p-5 text-[#F3E2D4] shadow-[0_20px_60px_rgba(0,0,0,0.28)] backdrop-blur-md ${className}`}
       >
-        <div className="mb-5 flex items-center gap-3">
+        <div className="mb-4 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#FC7023]/35 bg-[#FC7023]/12 text-[#FC7023]">
             <BrainCircuit size={21} />
           </div>
@@ -141,13 +150,62 @@ function TasteAgentConsole({
               {hasTasteReason
                 ? "Why this fits"
                 : isTitleLookup
-                  ? "Lookup details"
+                  ? user
+                    ? "Taste fit"
+                    : "Lookup details"
                   : "How it works"}
             </h3>
           </div>
         </div>
 
-        <div className="mb-5 space-y-3">
+        {isTitleLookup && titleFit && (
+          <div className="mb-4 rounded-2xl border border-[#FC7023]/24 bg-[#FC7023]/10 p-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <HeartHandshake size={18} className="shrink-0 text-[#FC7023]" />
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#FC7023]/80">
+                    Taste fit estimate
+                  </p>
+                  <p className="truncate text-base font-black text-[#F3E2D4]">
+                    {titleFit.label}
+                  </p>
+                </div>
+              </div>
+              <div className="shrink-0 text-right">
+                <div className="text-2xl font-black leading-none text-[#F3E2D4]">
+                  {titleFit.score}
+                </div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#F3E2D4]/45">
+                  /100
+                </div>
+              </div>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-[#F3E2D4]/10">
+              <div
+                className="h-full rounded-full bg-[#FC7023]"
+                style={{ width: `${titleFit.score}%` }}
+              />
+            </div>
+            <p className="mt-3 text-xs leading-relaxed text-[#F3E2D4]/62">
+              {titleFit.reason}
+            </p>
+            {titleFit.signals.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {titleFit.signals.map((signal) => (
+                  <span
+                    key={signal}
+                    className="rounded-full bg-black/22 px-2.5 py-1 text-[11px] font-semibold text-[#F3E2D4]/76"
+                  >
+                    {signal}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="mb-4 space-y-2.5">
           {agentSteps.map((step, index) => (
             <div key={step.label} className="flex items-start gap-3">
               <span
@@ -162,10 +220,10 @@ function TasteAgentConsole({
                 {step.done ? <CheckCircle2 size={13} /> : <span className="text-[10px]">{index + 1}</span>}
               </span>
               <div>
-                <div className="text-sm font-bold text-[#F3E2D4]/92">
+                <div className="text-[13px] font-bold text-[#F3E2D4]/92">
                   {step.label}
                 </div>
-                <div className="text-xs leading-relaxed text-[#F3E2D4]/48">
+                <div className="text-[11px] leading-relaxed text-[#F3E2D4]/45">
                   {stepDescription(step.label, user, hasTasteMemory)}
                 </div>
               </div>
@@ -178,13 +236,13 @@ function TasteAgentConsole({
             <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[#FC7023]/80">
               Current pick
             </p>
-            <h4 className="mb-2 text-xl font-black">{currentMovie.title}</h4>
+            <h4 className="mb-2 text-lg font-black leading-tight">{currentMovie.title}</h4>
             <p className="text-sm leading-relaxed text-[#F3E2D4]/72">
               {user && currentMovie.reason
                 ? currentMovie.reason
                 : user
                   ? hasTasteMemory
-                    ? "Title search returns the exact movie first. Switch to Mood when you want TMDB candidates reranked against your taste profile."
+                    ? "Exact title result. The fit score above is a transparent profile-overlap estimate; Mood mode does the LLM rerank."
                     : "Title search returns the exact movie first. Add a few reviews, then Mood mode can rerank candidates against your taste."
                   : "Log in to connect recommendations to your own ratings, moods, and reviews."}
             </p>
@@ -302,9 +360,73 @@ function stepDescription(label, user, hasTasteMemory) {
     Explanation: "Turns the match into a short reason.",
     "Title lookup": "Finds the movie you typed directly.",
     "TMDB detail": "Loads cast, score, poster, and overview.",
+    "Taste fit estimate": "Checks genre/director overlap with your profile.",
     "Mood rerank": "Available when you search by feeling.",
   };
   return descriptions[label] || "";
+}
+
+function estimateTitleFit(movie, profile, user, hasTasteMemory) {
+  if (!movie || !user || !hasTasteMemory) return null;
+
+  const movieGenres = normalizeList(movie.genres);
+  const favoriteGenres = normalizeList(profile.favorite_genres);
+  const movieDirector = normalizeText(movie.director || "");
+  const favoriteDirectors = normalizeList(profile.favorite_directors);
+
+  const genreMatches = movieGenres.filter((genre) =>
+    favoriteGenres.some((favorite) => favorite === genre || favorite.includes(genre) || genre.includes(favorite)),
+  );
+  const directorMatch = favoriteDirectors.find(
+    (director) => director && movieDirector && director === movieDirector,
+  );
+  const rating = Number(movie.tmdb_rating);
+
+  let score = 35;
+  if (genreMatches.length > 0) score += Math.min(genreMatches.length * 14, 34);
+  if (directorMatch) score += 22;
+  if (Number.isFinite(rating) && rating >= 8) score += 9;
+  else if (Number.isFinite(rating) && rating >= 7) score += 5;
+
+  score = Math.min(score, 92);
+
+  const signals = [
+    ...genreMatches.slice(0, 3).map((genre) => `genre: ${toDisplayLabel(genre)}`),
+    directorMatch ? `director: ${toDisplayLabel(directorMatch)}` : null,
+    Number.isFinite(rating) && rating >= 8 ? "high TMDB rating" : null,
+  ].filter(Boolean);
+
+  const label =
+    score >= 72
+      ? "Strong overlap"
+      : score >= 55
+        ? "Promising match"
+        : "Open discovery";
+
+  const reason =
+    signals.length > 0
+      ? "Based on visible overlap between this title's TMDB metadata and your saved taste profile."
+      : "No strong genre or director overlap surfaced yet, so treat this as a direct lookup rather than a recommendation.";
+
+  return { label, reason, score, signals };
+}
+
+function normalizeList(value) {
+  if (!value) return [];
+  const items = Array.isArray(value) ? value : String(value).split(/[,/|]+/);
+  return items.map(normalizeText).filter(Boolean);
+}
+
+function normalizeText(value) {
+  return String(value).trim().toLowerCase();
+}
+
+function toDisplayLabel(value) {
+  return value
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 export default TasteAgentConsole;
