@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { X } from "lucide-react";
 import toast from "react-hot-toast";
 import MovieModalFront from "./MovieModalFront";
 import MovieModalBack from "./MovieModalBack";
@@ -76,20 +77,20 @@ function MovieModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-2 sm:px-0"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-3 backdrop-blur-sm sm:px-0"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-[95vw] sm:max-w-[900px] max-h-[95vh] sm:max-h-[90vh] overflow-hidden rounded-xl shadow-lg"
+        className="relative w-full max-w-[95vw] sm:max-w-[900px] max-h-[95vh] sm:max-h-[90vh] overflow-hidden rounded-2xl border border-[#FC7023]/24 shadow-[0_30px_90px_rgba(0,0,0,0.45)]"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           type="button"
           aria-label="Close movie details"
           onClick={onClose}
-          className="absolute right-3 top-3 z-[60] flex h-9 w-9 items-center justify-center rounded-full border border-[#F3E2D4]/20 bg-black/55 text-[#F3E2D4] shadow-lg backdrop-blur transition hover:bg-[#FC7023] hover:text-[#281B13]"
+          className="absolute right-3 top-3 z-[60] flex h-9 w-9 items-center justify-center rounded-xl border border-[#F3E2D4]/20 bg-black/60 text-[#F3E2D4] shadow-lg backdrop-blur transition hover:bg-[#FC7023] hover:text-[#281B13]"
         >
-          X
+          <X size={18} />
         </button>
         <motion.div
           className="w-full min-h-[500px] relative [transform-style:preserve-3d]"

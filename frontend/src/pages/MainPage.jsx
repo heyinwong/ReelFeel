@@ -22,11 +22,13 @@ function MainPage() {
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [activeRecommendation, setActiveRecommendation] = useState(null);
   const debounceRef = useRef(null);
+  const suppressSuggestionsRef = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const recommendRef = useRef(null);
 
   const handleInputChange = (e) => {
     const value = e.target.value;
+    suppressSuggestionsRef.current = false;
     setInput(value);
     if (mode === "search") {
       setRecommendations([]);
@@ -48,6 +50,7 @@ function MainPage() {
       const res = await API.get("/search_suggestions", {
         params: { query },
       });
+      if (suppressSuggestionsRef.current) return;
       const data = res.data;
       setSuggestions(data.suggestions || []);
     } catch (err) {
@@ -58,6 +61,8 @@ function MainPage() {
 
   const handleSubmit = async (e = null) => {
     if (e) e.preventDefault();
+    suppressSuggestionsRef.current = true;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     setIsSubmitting(true);
     setSuggestions([]);
     setSubmittedMood(input);
@@ -95,12 +100,14 @@ function MainPage() {
       }));
 
       setRecommendations(normalized);
+      setSuggestions([]);
     } catch (error) {
       console.error("Failed to fetch:", error);
       setRecommendations([]);
     } finally {
       setLoading(false);
       setIsSubmitting(false);
+      setSuggestions([]);
 
       // ✅ 加这一段实现平滑滚动
       setTimeout(() => {
@@ -115,6 +122,7 @@ function MainPage() {
     }
 
     setSuggestions([]);
+    suppressSuggestionsRef.current = true;
     setInput(movie.title);
 
     try {
@@ -148,9 +156,9 @@ function MainPage() {
 
       <HeroSection
         title="Your reel. Your taste."
-        subtitle1="ReelFeel uses AI taste modeling to understand your cinematic identity."
-        subtitle2="It finds the stories that resonate with your thoughts and emotions."
-        imageSrc="/hero.jpg" // 可省略，默认就是这个
+        subtitle1="ReelFeel turns ratings, moods, and reviews into a taste profile."
+        subtitle2="Mood mode retrieves from TMDB, then reranks against that profile."
+        imageSrc="/hero.jpg"
       />
       <div className="relative z-20 -mt-16 sm:-mt-20 flex justify-center px-4">
         <SearchPanel
@@ -161,6 +169,7 @@ function MainPage() {
           loading={loading}
           onSubmit={handleSubmit}
           onSwitchMode={() => {
+            suppressSuggestionsRef.current = false;
             setMode(mode === "mood" ? "search" : "mood");
             setRecommendations([]);
             setActiveRecommendation(null);
@@ -258,7 +267,7 @@ function MainPage() {
                 className="text-3xl font-bold text-[#F3E2D4] drop-shadow-sm"
               >
                 {mode === "mood"
-                  ? "Let your reel unfold from who you are."
+                  ? "Ask by feeling, not by filter."
                   : "Seeking something specific?"}
               </motion.h2>
 
@@ -270,8 +279,8 @@ function MainPage() {
                 className="text-[#F3E2D4]/90 text-base sm:text-lg mt-3 max-w-xl"
               >
                 {mode === "mood"
-                  ? "Describe a feeling, a vibe, or a fleeting thought. We'll find a film that echoes it."
-                  : "Type a movie title, or explore suggestions that resonate with your taste."}
+                  ? "Describe the kind of evening you want. ReelFeel shortlists real movies first, then explains the taste match."
+                  : "Type a movie title. Search returns the title directly, with a transparent fit estimate when your profile has enough signal."}
               </motion.p>
             </div>
           </div>

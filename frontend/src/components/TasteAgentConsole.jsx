@@ -136,10 +136,10 @@ function TasteAgentConsole({
         initial={{ opacity: 0, x: 18 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.45, ease: "easeOut" }}
-        className={`rounded-3xl border border-[#FC7023]/25 bg-[#1c120d]/82 p-5 text-[#F3E2D4] shadow-[0_20px_60px_rgba(0,0,0,0.28)] backdrop-blur-md ${className}`}
+        className={`rounded-2xl border border-[#FC7023]/24 bg-[#1c120d]/86 p-5 text-[#F3E2D4] shadow-[0_20px_60px_rgba(0,0,0,0.28)] backdrop-blur-md ${className}`}
       >
         <div className="mb-4 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#FC7023]/35 bg-[#FC7023]/12 text-[#FC7023]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#FC7023]/35 bg-[#FC7023]/12 text-[#FC7023]">
             <BrainCircuit size={21} />
           </div>
           <div>
@@ -151,15 +151,15 @@ function TasteAgentConsole({
                 ? "Why this fits"
                 : isTitleLookup
                   ? user
-                    ? "Taste fit"
-                    : "Lookup details"
-                  : "How it works"}
+                    ? "Fit estimate"
+                    : "Lookup trace"
+                  : "Agent trace"}
             </h3>
           </div>
         </div>
 
         {isTitleLookup && titleFit && (
-          <div className="mb-4 rounded-2xl border border-[#FC7023]/24 bg-[#FC7023]/10 p-4">
+          <div className="mb-4 rounded-xl border border-[#FC7023]/24 bg-[#FC7023]/10 p-4">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-2">
                 <HeartHandshake size={18} className="shrink-0 text-[#FC7023]" />
@@ -205,35 +205,9 @@ function TasteAgentConsole({
           </div>
         )}
 
-        <div className="mb-4 space-y-2.5">
-          {agentSteps.map((step, index) => (
-            <div key={step.label} className="flex items-start gap-3">
-              <span
-                className={`mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-                  step.done
-                    ? "border-[#FC7023] bg-[#FC7023] text-[#281B13]"
-                    : step.active
-                      ? "border-[#FC7023]/55 bg-[#FC7023]/18 animate-pulse"
-                      : "border-[#F3E2D4]/15 bg-white/5"
-                }`}
-              >
-                {step.done ? <CheckCircle2 size={13} /> : <span className="text-[10px]">{index + 1}</span>}
-              </span>
-              <div>
-                <div className="text-[13px] font-bold text-[#F3E2D4]/92">
-                  {step.label}
-                </div>
-                <div className="text-[11px] leading-relaxed text-[#F3E2D4]/45">
-                  {stepDescription(step.label, user, hasTasteMemory)}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
         {currentMovie ? (
-          <div className="rounded-2xl border border-[#FC7023]/20 bg-black/22 p-4">
-            <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[#FC7023]/80">
+          <div className="mb-4 rounded-xl border border-[#FC7023]/20 bg-black/24 p-4">
+            <p className="mb-1 text-[11px] font-black uppercase tracking-[0.18em] text-[#FC7023]/80">
               Current pick
             </p>
             <h4 className="mb-2 text-lg font-black leading-tight">{currentMovie.title}</h4>
@@ -242,8 +216,8 @@ function TasteAgentConsole({
                 ? currentMovie.reason
                 : user
                   ? hasTasteMemory
-                    ? "Exact title result. The fit score above is a transparent profile-overlap estimate; Mood mode does the LLM rerank."
-                    : "Title search returns the exact movie first. Add a few reviews, then Mood mode can rerank candidates against your taste."
+                    ? "Direct title result. The score is metadata overlap with your profile; Mood mode is where the LLM rerank runs."
+                    : "Direct title result. Add a few reviews, then Mood mode can rerank candidates against your taste."
                   : "Log in to connect recommendations to your own ratings, moods, and reviews."}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -258,12 +232,47 @@ function TasteAgentConsole({
             </div>
           </div>
         ) : (
-          <div className="rounded-2xl border border-dashed border-[#FC7023]/24 bg-black/18 p-4 text-sm leading-relaxed text-[#F3E2D4]/65">
+          <div className="mb-4 rounded-xl border border-dashed border-[#FC7023]/24 bg-black/18 p-4 text-sm leading-relaxed text-[#F3E2D4]/65">
             {isProfileLoading
               ? "Reading taste memory..."
-              : "Start a recommendation to see candidate retrieval, reranking, and explanation here."}
+              : "Start a mood recommendation to see the retrieval, rerank, and explanation trace."}
           </div>
         )}
+
+        <div className="mb-4 border-t border-[#F3E2D4]/10 pt-4">
+          <p className="mb-3 text-[11px] font-black uppercase tracking-[0.18em] text-[#F3E2D4]/45">
+            What happened
+          </p>
+          <div className="space-y-2.5">
+            {agentSteps.map((step, index) => (
+              <div key={step.label} className="flex items-start gap-3">
+                <span
+                  className={`mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+                    step.done
+                      ? "border-[#FC7023] bg-[#FC7023] text-[#281B13]"
+                      : step.active
+                        ? "border-[#FC7023]/55 bg-[#FC7023]/18 animate-pulse"
+                        : "border-[#F3E2D4]/15 bg-white/5"
+                  }`}
+                >
+                  {step.done ? (
+                    <CheckCircle2 size={13} />
+                  ) : (
+                    <span className="text-[10px]">{index + 1}</span>
+                  )}
+                </span>
+                <div>
+                  <div className="text-[13px] font-bold text-[#F3E2D4]/92">
+                    {step.label}
+                  </div>
+                  <div className="text-[11px] leading-relaxed text-[#F3E2D4]/45">
+                    {stepDescription(step.label, user, hasTasteMemory)}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </motion.aside>
     );
   }
@@ -285,10 +294,10 @@ function TasteAgentConsole({
               <p className="text-[11px] font-black uppercase tracking-[0.22em] text-[#FC7023]">
                 Taste Memory
               </p>
-              <p className="truncate text-sm leading-relaxed text-[#F3E2D4]/76 sm:text-base">
+              <p className="text-sm leading-relaxed text-[#F3E2D4]/76 sm:text-base">
                 {user
                   ? compactSummary(profile.summary, snapshotCount)
-                  : "Try the demo to see recommendations grounded in a real watch history."}
+                  : "Demo profile ready with curated taste memory."}
               </p>
             </div>
           </div>

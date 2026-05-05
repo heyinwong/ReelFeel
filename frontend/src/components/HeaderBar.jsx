@@ -22,15 +22,15 @@ function HeaderBar({ className = "" }) {
   const getTagline = () => {
     switch (location.pathname) {
       case "/":
-        return "Discover movies that feel like you";
+        return "Taste-aware film discovery";
       case "/watched":
-        return "Your movie journey so far";
+        return "Logged films and reactions";
       case "/waiting":
-        return "Your cinematic future awaits";
+        return "Titles saved for later";
       case "/about":
-        return "Where this story began, and why.";
+        return "Product context and build notes";
       default:
-        return "Your detailed dashboard";
+        return "Taste profile evidence";
     }
   };
 
@@ -45,12 +45,12 @@ function HeaderBar({ className = "" }) {
     <header
       className={`sticky top-0 bg-[#281B13] border-b border-[#FC7023] text-white z-50 ${className}`}
     >
-      <div className="max-w-screen-xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
+      <div className="max-w-screen-xl mx-auto px-5 py-3.5 flex items-center justify-between gap-4">
         {/* Left: Logo + Tagline */}
         <div className="flex min-w-0 flex-col sm:flex-row sm:items-center sm:gap-4 text-center sm:text-left">
           <h1
             onClick={() => handleNav("/")}
-            className="text-2xl sm:text-3xl font-black tracking-widest text-[#FC7023] cursor-pointer hover:scale-105 transition-transform"
+            className="text-2xl sm:text-3xl font-black tracking-[0.18em] text-[#FC7023] cursor-pointer hover:scale-[1.02] transition-transform"
           >
             ReelFeel
           </h1>
@@ -61,13 +61,13 @@ function HeaderBar({ className = "" }) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
               transition={{ duration: 0.5 }}
-              className="text-xs sm:text-sm text-white font-light italic sm:mt-1 leading-tight"
+              className="max-w-[220px] truncate text-xs sm:text-sm text-white/82 font-medium italic sm:mt-1 leading-tight sm:max-w-none sm:whitespace-nowrap"
             >
               {getTagline()}
             </motion.p>
           </AnimatePresence>
           {user?.is_demo && (
-            <span className="mx-auto mt-2 w-fit rounded-full border border-[#F3E2D4]/20 bg-[#F3E2D4]/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-[#F3E2D4]/80 sm:mx-0 sm:mt-0">
+            <span className="mx-auto mt-2 w-fit rounded-xl border border-[#F3E2D4]/16 bg-[#F3E2D4]/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-[#F3E2D4]/72 sm:mx-0 sm:mt-0">
               Read-only demo
             </span>
           )}

@@ -67,16 +67,16 @@ function SearchPanel({
               onChange={onInputChange}
               placeholder={
                 mode === "mood"
-                  ? "Describe the feeling you want tonight"
+                  ? "Describe a mood or vibe"
                   : "Search a movie title"
               }
-              className="h-[54px] w-full flex-1 rounded-xl border border-[#E95E1D]/70 bg-white px-5 text-[17px] text-[#281B13] placeholder:text-[#7a5c4a] focus:outline-none focus:ring-2 focus:ring-[#E95E1D]/40"
+              className="!h-[54px] min-h-[54px] w-full flex-1 appearance-none rounded-xl border border-[#E95E1D]/70 bg-white px-5 text-[17px] leading-[54px] text-[#281B13] placeholder:text-[#7a5c4a] focus:outline-none focus:ring-2 focus:ring-[#E95E1D]/40"
             />
 
             <button
               type="submit"
               disabled={loading || !input.trim()}
-              className={`h-[54px] w-full rounded-xl text-base font-black transition-all shadow sm:w-[150px] flex items-center justify-center ${
+              className={`!h-[54px] min-h-[54px] w-full rounded-xl text-base font-black transition-all shadow sm:w-[150px] flex items-center justify-center ${
                 loading || !input.trim()
                   ? "bg-[#E95E1D]/45 cursor-not-allowed text-white"
                   : "bg-[#E95E1D] text-white hover:bg-[#D94F13] hover:scale-[1.02] active:scale-95"

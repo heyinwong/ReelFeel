@@ -122,7 +122,7 @@ function DashboardPage() {
               animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
               transition={{ delay: 0.3, duration: 1 }}
             >
-              The evidence layer behind every recommendation.
+              The taste memory, snapshots, and profile signals behind Mood mode.
             </motion.p>
 
             <motion.div
@@ -158,12 +158,12 @@ function DashboardPage() {
               >
                 {snapshots.length === 0 ? (
                   <>
-                    <div className="inline-block px-6 py-3 rounded-lg bg-[#3a2a20]/80 text-white text-sm font-semibold shadow-inner border border-[#FC7023]/30 cursor-not-allowed select-none opacity-80">
-                      No insights yet
+                    <div className="inline-block rounded-xl border border-[#FC7023]/30 bg-[#3a2a20]/80 px-5 py-3 text-sm font-bold text-white shadow-inner">
+                      Waiting for first taste signal
                     </div>
-                    <p className="text-sm text-[#F3E2D4]/70 italic mt-3 tracking-wide">
-                      Add your first movie review to unlock personalized AI
-                      reflections.
+                    <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-[#F3E2D4]/72">
+                      Add a film to Reel Log with a rating, mood, or note. The
+                      dashboard will turn those signals into a taste profile.
                     </p>
                   </>
                 ) : (

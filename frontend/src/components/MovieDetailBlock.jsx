@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { FiLogIn, FiZap } from "react-icons/fi";
+import { Check, Plus } from "lucide-react";
 
 function MovieDetailBlock({ movie, user, onAdd, mode }) {
   if (!movie) return null;
@@ -11,21 +12,28 @@ function MovieDetailBlock({ movie, user, onAdd, mode }) {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
-      className="bg-gradient-to-br from-[#FAEFE0] to-[#F3E2D4] text-[#281B13] mt-14 rounded-3xl shadow-[0_8px_24px_rgba(252,112,35,0.15)] px-4 sm:px-10 py-6 sm:py-8 max-w-4xl mx-auto relative overflow-hidden border border-[#FC7023]/30 backdrop-blur-md"
+      className="mt-8 max-w-4xl mx-auto overflow-hidden rounded-2xl border border-[#FC7023]/24 bg-[#F7E9D8] px-5 py-6 text-[#281B13] shadow-[0_18px_55px_rgba(0,0,0,0.2)] sm:px-8"
     >
-      {/* 标题 */}
-      <h3 className="text-2xl sm:text-3xl font-extrabold mb-2 tracking-wide text-center break-words overflow-wrap-anywhere">
-        {movie.title}
-      </h3>
+      <div className="mb-5 flex flex-col gap-3 border-b border-[#281B13]/10 pb-5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <p className="mb-2 text-[11px] font-black uppercase tracking-[0.2em] text-[#B64A17]">
+            Selected title
+          </p>
+          <h3 className="text-2xl sm:text-3xl font-black leading-tight tracking-normal break-words overflow-wrap-anywhere">
+            {movie.title}
+          </h3>
+        </div>
+        <div className="w-fit rounded-xl border border-[#FC7023]/28 bg-[#FC7023]/10 px-3 py-2 text-left sm:text-right">
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#8E3A12]/70">
+            TMDB score
+          </p>
+          <p className="text-xl font-black leading-none text-[#FC7023]">
+            {movie.tmdb_rating ? Number(movie.tmdb_rating).toFixed(1) : "N/A"}
+          </p>
+        </div>
+      </div>
 
-      {/* TMDB评分 */}
-      <p className="text-[#FC7023] text-base sm:text-lg font-semibold text-center mb-4 tracking-wider">
-        TMDB Rating:{" "}
-        {movie.tmdb_rating ? Number(movie.tmdb_rating).toFixed(1) : "N/A"}
-      </p>
-
-      {/* 简介 */}
-      <p className="text-sm sm:text-base leading-relaxed mb-6 px-1 text-center text-[#3b2c23] break-words overflow-wrap-anywhere">
+      <p className="mb-5 max-w-3xl text-sm sm:text-base leading-relaxed text-[#3b2c23]/92 break-words overflow-wrap-anywhere">
         {movie.description}
       </p>
 
@@ -41,21 +49,21 @@ function MovieDetailBlock({ movie, user, onAdd, mode }) {
               damping: 12,
               delay: 0.2,
             }}
-            className="relative bg-[#fdf4ed] border border-dashed border-[#FC7023]/45 rounded-[18px] px-6 pt-6 pb-5 mt-6 mb-8 shadow-sm"
+            className="relative border-l-4 border-[#FC7023] bg-white/50 px-5 py-4 mt-5 mb-6 shadow-sm"
           >
             <motion.div
               initial={{ x: -10, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 0.4, duration: 0.3 }}
-              className="absolute -top-3 left-0 bg-[#281B13] text-[#F3E2D4] text-xs font-bold px-3 py-1 rounded-br-xl rounded-tl-lg tracking-wide shadow-md"
+              className="mb-3 inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-[0.16em] text-[#8E3A12]"
             >
-              <FiLogIn className="inline-block mr-1 -mt-0.5" />
-              Taste Insight Locked
+              <FiLogIn />
+              Personal rationale locked
             </motion.div>
 
-            <p className="text-sm sm:text-base text-[#4b3a2f] leading-relaxed mt-2">
-              Log in to turn this recommendation into a personal AI taste
-              insight based on your ratings, reviews, and watch history.
+            <p className="text-sm sm:text-base text-[#4b3a2f] leading-relaxed">
+              Log in to rerank recommendations against your own ratings,
+              reviews, moods, and watch history.
             </p>
             <Link
               to="/login"
@@ -76,25 +84,23 @@ function MovieDetailBlock({ movie, user, onAdd, mode }) {
               damping: 12,
               delay: 0.3,
             }}
-            className="relative bg-[#fdf4ed] border border-dashed border-[#FC7023]/60 rounded-[18px] px-6 pt-6 pb-4 mt-6 mb-8 shadow-sm"
+            className="relative border-l-4 border-[#FC7023] bg-white/52 px-5 py-4 mt-5 mb-6 shadow-sm"
           >
-            {/* AI Insight 角标 */}
             <motion.div
               initial={{ x: -10, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 0.5, duration: 0.3 }}
-              className="absolute -top-3 left-0 bg-[#FC7023] text-[#281B13] text-xs font-bold px-3 py-1 rounded-br-xl rounded-tl-lg tracking-wide shadow-md"
+              className="mb-3 inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-[0.16em] text-[#8E3A12]"
             >
-              <FiZap className="inline-block mr-1 -mt-0.5" />
-              AI Insight
+              <FiZap />
+              Taste rationale
             </motion.div>
 
-            {/* 推荐理由内容 */}
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6, duration: 0.4 }}
-              className="text-sm sm:text-base italic text-[#4b3a2f] leading-relaxed mt-2"
+              className="text-sm sm:text-base text-[#4b3a2f] leading-relaxed"
             >
               {movie.reason}
             </motion.p>
@@ -102,13 +108,13 @@ function MovieDetailBlock({ movie, user, onAdd, mode }) {
               {(movie.taste_match_tags || []).map((tag) => (
                 <span
                   key={tag}
-                  className="text-xs px-2 py-1 rounded-full bg-[#FC7023]/15 border border-[#FC7023]/30 text-[#4b3a2f]"
+                  className="text-xs px-2.5 py-1 rounded-full bg-[#FC7023]/13 border border-[#FC7023]/24 text-[#4b3a2f]"
                 >
-                  {tag}
+                  {tag.replaceAll("_", " ")}
                 </span>
               ))}
               {movie.confidence && (
-                <span className="text-xs px-2 py-1 rounded-full bg-[#281B13]/10 text-[#4b3a2f]/75">
+                <span className="text-xs px-2.5 py-1 rounded-full bg-[#281B13]/8 text-[#4b3a2f]/72">
                   {movie.confidence} confidence
                 </span>
               )}
@@ -125,59 +131,58 @@ function MovieDetailBlock({ movie, user, onAdd, mode }) {
               damping: 12,
               delay: 0.3,
             }}
-            className="relative bg-[#f5f2ee] border border-dashed border-[#aaa]/40 rounded-[18px] px-6 pt-6 pb-4 mt-6 mb-8 shadow-sm"
+            className="relative border-l-4 border-[#9C8A7D] bg-white/42 px-5 py-4 mt-5 mb-6 shadow-sm"
           >
-            {/* Fallback 角标 */}
             <motion.div
               initial={{ x: -10, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 0.5, duration: 0.3 }}
-              className="absolute -top-3 left-0 bg-[#aaa] text-white text-xs font-bold px-3 py-1 rounded-br-xl rounded-tl-lg tracking-wide shadow"
+              className="mb-3 inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-[0.16em] text-[#5f5047]/80"
             >
-              <FiZap className="inline-block mr-1 -mt-0.5" />
-              AI Insight
+              <FiZap />
+              Taste rationale
             </motion.div>
 
-            {/* 提示文字 */}
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6, duration: 0.4 }}
-              className="text-sm sm:text-base italic text-[#4a3a30]/70 leading-relaxed mt-2"
+              className="text-sm sm:text-base text-[#4a3a30]/72 leading-relaxed"
             >
-              Our AI is still learning your taste. Once you review a few movies,
-              personalized insights will appear here.
+              This result came from the movie candidate pool. Add reviews to
+              give Mood mode enough profile signals for a personal rerank.
             </motion.p>
           </motion.div>
         ))}
 
-      {/* 按钮区 */}
-      <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-4">
+      <div className="flex flex-col sm:flex-row items-center gap-3 mt-4">
         <motion.button
-          whileHover={isDemo ? undefined : { scale: 1.05, y: -2 }}
+          whileHover={isDemo ? undefined : { scale: 1.02, y: -1 }}
           whileTap={isDemo ? undefined : { scale: 0.97 }}
           disabled={isDemo}
-          className={`w-full sm:w-auto px-6 py-2.5 rounded-full font-bold transition-all duration-200 shadow-md text-center ${
+          className={`inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-2.5 font-bold transition-all duration-200 sm:w-auto ${
             isDemo
-              ? "cursor-not-allowed bg-[#281B13]/25 text-[#281B13]/55 shadow-none"
-              : "bg-[#FC7023] hover:bg-orange-600 text-white"
+              ? "cursor-not-allowed bg-[#281B13]/18 text-[#281B13]/48"
+              : "bg-[#281B13] text-[#F3E2D4] shadow-md hover:bg-[#3a281d]"
           }`}
           onClick={() => !isDemo && onAdd(movie, "watched")}
         >
-          + Add to Reel Log
+          {isDemo ? <Check size={16} /> : <Plus size={16} />}
+          Add to Reel Log
         </motion.button>
         <motion.button
-          whileHover={isDemo ? undefined : { scale: 1.05, y: -2 }}
+          whileHover={isDemo ? undefined : { scale: 1.02, y: -1 }}
           whileTap={isDemo ? undefined : { scale: 0.97 }}
           disabled={isDemo}
-          className={`w-full sm:w-auto px-6 py-2.5 rounded-full font-bold transition-all duration-200 shadow-md text-center ${
+          className={`inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-2.5 font-bold transition-all duration-200 sm:w-auto ${
             isDemo
-              ? "cursor-not-allowed bg-[#281B13]/25 text-[#281B13]/55 shadow-none"
-              : "bg-[#FC7023] hover:bg-orange-600 text-white"
+              ? "cursor-not-allowed bg-[#281B13]/18 text-[#281B13]/48"
+              : "border border-[#281B13]/20 bg-white/45 text-[#281B13] shadow-sm hover:bg-white/70"
           }`}
           onClick={() => !isDemo && onAdd(movie, "waiting")}
         >
-          + Add to Watchlist
+          {isDemo ? <Check size={16} /> : <Plus size={16} />}
+          Add to Watchlist
         </motion.button>
       </div>
       {isDemo && (

@@ -12,8 +12,7 @@ function MovieModalFront({ movie, onFlip, readOnly }) {
   }, [movie.id, movie.tmdb_id, imageSource]);
 
   return (
-    <div className="absolute inset-0 flex flex-col lg:flex-row bg-white rounded-xl shadow-lg [backface-visibility:hidden]">
-      {/* 左侧图像区域 */}
+    <div className="absolute inset-0 flex flex-col lg:flex-row bg-white rounded-2xl shadow-lg [backface-visibility:hidden]">
       <div className="w-full lg:w-1/2 h-60 sm:h-72 lg:h-auto">
         <img
           src={imageSrc}
@@ -23,9 +22,7 @@ function MovieModalFront({ movie, onFlip, readOnly }) {
         />
       </div>
 
-      {/* 右侧信息区域 */}
       <div className="w-full lg:w-1/2 bg-[#281B13] text-[#F3E2D4] px-4 sm:px-6 py-6 flex flex-col justify-between border-t-4 lg:border-t-0 lg:border-l-4 border-[#FC7023] max-h-[90vh]">
-        {/* 信息展示部分 */}
         <div className="flex-grow space-y-3 overflow-hidden">
           <h2 className="text-xl sm:text-2xl font-bold">{movie.title}</h2>
 
@@ -54,13 +51,11 @@ function MovieModalFront({ movie, onFlip, readOnly }) {
             </p>
           )}
 
-          {/* 独立滚动的描述 */}
           <div className="text-sm sm:text-base leading-relaxed text-[#F3E2D4]/90 mt-4 max-h-40 overflow-y-auto pr-2">
             {movie.description || "No description available."}
           </div>
         </div>
 
-        {/* 仅 watched 显示用户数据 */}
         {isWatched && (
           <div className="mt-4">
             <UserMovieStats
@@ -71,14 +66,13 @@ function MovieModalFront({ movie, onFlip, readOnly }) {
           </div>
         )}
 
-        {/* 翻转按钮 */}
         {!readOnly && (
           <div className="mt-4 flex justify-end">
             <button
               onClick={onFlip}
-              className="w-full sm:w-auto px-4 py-2 rounded-lg bg-[#FC7023] text-[#281B13] font-medium hover:bg-[#ff8c3a] transition"
+              className="w-full sm:w-auto px-4 py-2 rounded-xl bg-[#FC7023] text-[#281B13] font-bold hover:bg-[#ff8c3a] transition"
             >
-              Write your thoughts →
+              Add reflection
             </button>
           </div>
         )}

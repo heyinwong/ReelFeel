@@ -66,8 +66,8 @@ function RecommendBlock({
   if (!recommendations || recommendations.length === 0) return null;
 
   return (
-    <div className="w-full max-w-7xl mx-auto mt-12 px-4 sm:px-6 overflow-x-hidden overflow-y-hidden transition-all duration-300 ease-in-out">
-      <div className="grid gap-7 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
+    <div className="w-full max-w-7xl mx-auto mt-8 px-4 sm:px-6 overflow-x-hidden overflow-y-hidden transition-all duration-300 ease-in-out">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
         <div className="min-w-0">
           <CarouselStrip
             movies={recommendations}
@@ -82,7 +82,7 @@ function RecommendBlock({
             mode={mode}
           />
         </div>
-        {agentPanel && <div className="xl:sticky xl:top-28">{agentPanel}</div>}
+        {agentPanel && <div className="xl:sticky xl:top-24 xl:pt-24">{agentPanel}</div>}
       </div>
     </div>
   );
