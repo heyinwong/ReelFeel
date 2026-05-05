@@ -13,6 +13,15 @@ import API from "../utils/api";
 const AuthContext = createContext(null);
 
 const AUTH_CHANGE_EVENT = "reelfeel-auth-change";
+const AUTH_CHECK_TIMEOUT_MS = 8000;
+
+function getStoredToken() {
+  try {
+    return localStorage.getItem("token");
+  } catch {
+    return null;
+  }
+}
 
 export function notifyAuthChange() {
   window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
@@ -20,7 +29,7 @@ export function notifyAuthChange() {
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => Boolean(getStoredToken()));
   const navigate = useNavigate();
 
   const clearSession = useCallback(() => {
@@ -30,15 +39,22 @@ export function AuthProvider({ children }) {
   }, []);
 
   const refreshUser = useCallback(async () => {
-    const token = localStorage.getItem("token");
+    const token = getStoredToken();
     if (!token) {
       setUser(null);
       setIsLoading(false);
       return null;
     }
 
+    setIsLoading(true);
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(
+      () => controller.abort(),
+      AUTH_CHECK_TIMEOUT_MS
+    );
+
     try {
-      const res = await API.get("/me");
+      const res = await API.get("/me", { signal: controller.signal });
       setUser(res.data);
       return res.data;
     } catch {
@@ -46,6 +62,7 @@ export function AuthProvider({ children }) {
       clearSession();
       return null;
     } finally {
+      window.clearTimeout(timeoutId);
       setIsLoading(false);
     }
   }, [clearSession]);

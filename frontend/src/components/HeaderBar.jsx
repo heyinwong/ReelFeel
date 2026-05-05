@@ -8,14 +8,14 @@ import ReelButton from "./ReelButton";
 function HeaderBar({ className = "" }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, isLoading, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const demoCode = import.meta.env.VITE_DEMO_ACCESS_CODE || "local-demo-code";
   const demoPath = `/demo?code=${encodeURIComponent(demoCode)}`;
   const navItems = [
-    { path: "/watched", label: "Reel Log" },
-    { path: "/waiting", label: "Watchlist" },
-    { path: "/dashboard", label: "Dashboard" },
+    { path: "/watched", label: "Reel Log", authRequired: true },
+    { path: "/waiting", label: "Watchlist", authRequired: true },
+    { path: "/dashboard", label: "Dashboard", authRequired: true },
     { path: "/about", label: "About" },
   ];
 
@@ -34,7 +34,13 @@ function HeaderBar({ className = "" }) {
     }
   };
 
-  const handleNav = (path) => {
+  const handleNav = (path, authRequired = false) => {
+    if (authRequired && !isLoading && !user) {
+      navigate("/login", { state: { from: { pathname: path } } });
+      setMenuOpen(false);
+      return;
+    }
+
     navigate(path);
     setMenuOpen(false);
   };
@@ -79,7 +85,7 @@ function HeaderBar({ className = "" }) {
             <ReelButton
               key={item.path}
               active={isActive(item.path)}
-              onClick={() => handleNav(item.path)}
+              onClick={() => handleNav(item.path, item.authRequired)}
             >
               {item.label}
             </ReelButton>
@@ -121,7 +127,7 @@ function HeaderBar({ className = "" }) {
             <ReelButton
               key={item.path}
               active={isActive(item.path)}
-              onClick={() => handleNav(item.path)}
+              onClick={() => handleNav(item.path, item.authRequired)}
               className="w-full"
             >
               {item.label}
